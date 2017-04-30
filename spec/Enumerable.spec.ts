@@ -37,4 +37,32 @@ describe('Enumerable', () => {
             expect(result).toEqual(expected);
         });
     });
+
+    describe('FirstOrDefault', () => {
+        it('Should return me the transformed items', () => {
+            const source = [1, 3];
+
+            const expected = [2, 4];
+
+            const result =
+                Enumerable.Of(source)
+                    .Select(s => s + 1)
+                    .ToArray();
+
+            expect(result).toEqual(expected);
+        });
+
+        it('Should return an empty sequence if the input was empty', () => {
+            const source: number[] = [];
+
+            const expected: number[] = [];
+
+            const result =
+                Enumerable.Of(source)
+                    .Select(s => s + 1)
+                    .ToArray();
+
+            expect(result).toEqual(expected);
+        });
+    })
 });

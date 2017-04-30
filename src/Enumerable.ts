@@ -6,7 +6,7 @@ function isIterator<T>(obj: any): obj is Iterator<T> {
 export class Enumerable<T> implements Iterable<T> {
     private iterator: Iterator<T>;
 
-    public static Of<T>(source: T[] | Iterator<T>): Enumerable<T> {        
+    public static Of<T>(source: T[] | Iterator<T>): Enumerable<T> {
         if (isIterator(source)) {
             return new Enumerable<T>(source);
         }
@@ -49,8 +49,18 @@ export class Enumerable<T> implements Iterable<T> {
         }
     }
 
+    public Select<TReturnType>(selector: (item: T) => TReturnType): Enumerable<TReturnType> {
+        const items: TReturnType[] = [];
+        let currentItem = this.iterator.next();
+        while (!currentItem.done) {
+            items.push(selector(currentItem.value));
+            currentItem = this.iterator.next();
+        }
+        return Enumerable.Of(items);
+    }
+
     public ToArray(): T[] {
-        const items = [];
+        const items: T[] = [];
         let currentItem = this.iterator.next();
         while (!currentItem.done) {
             items.push(currentItem.value)
