@@ -107,6 +107,10 @@ export class Enumerable<T> implements Iterable<T> {
         return Enumerable.Of(newIterator);
     };
 
+    public Contains(item: T): boolean {
+        return this.Any(a => a === item);
+    };
+
     public Where(predicate: (item: T) => boolean) {
         const newIterator = this.makeIterator<T>(this.iterator, function (sourceIterator) {
             let nextItem = sourceIterator.next();
