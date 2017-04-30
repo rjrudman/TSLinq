@@ -3,11 +3,12 @@ import { Enumerable, ResetableIterator } from '../src/Enumerable';
 describe('Enumerable', () => {
     describe('DefaultIfEmpty', () => {
         it('Should return itself if sequence has items', () => {
-            const source = Enumerable.Of([1, 2, 3, 4, 5]);
+            const originalSource = [1, 2, 3, 4, 5];
+            const source = Enumerable.Of(originalSource);
 
-            const expected = source;
+            const expected = originalSource;
 
-            const result = source.DefaultIfEmpty(1);
+            const result = source.DefaultIfEmpty(1).ToArray();
 
             expect(result).toEqual(expected);
         });
