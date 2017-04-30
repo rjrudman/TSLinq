@@ -123,13 +123,26 @@ export class Enumerable<T> implements Iterable<T> {
         return this.Any(a => a === item);
     };
 
-
     public Distinct(): Enumerable<T> {
-        return this.GroupBy(a => a).Select(a => a.Key);
+        return this.DistinctBy(a => a);
     }
 
     public DistinctBy<TValue>(selector: (item: T) => TValue): Enumerable<T> {
-        return this.GroupBy(selector).Select(a => a.Values.First());
+        const seenItems: TValue[] = [];
+        const newIterator = this.makeIterator<T>(this.iterator, function (sourceIterator) {
+            let nextItem = sourceIterator.next();
+            while (!nextItem.done) {
+                const key = selector(nextItem.value);
+                if (seenItems.indexOf(key) === -1) {
+                    seenItems.push(key);
+                    return nextItem;
+                }
+                nextItem = sourceIterator.next();
+            }
+            return nextItem;
+        });
+
+        return Enumerable.Of(newIterator);
     }
 
     public ElementAt(index: number): T {
@@ -182,24 +195,28 @@ export class Enumerable<T> implements Iterable<T> {
     }
 
     public GroupBy<TValue>(selector: (item: T) => TValue): Enumerable<Grouping<TValue, T>> {
-        const mapping: any = {}
+        const keys: TValue[] = [];
+        const values: T[][] = [];
 
         this.ForEach(i => {
-            const key = JSON.stringify(selector(i));
-            if (mapping[key] === undefined) {
-                mapping[key] = [];
+            const key = selector(i);
+            let keyIndex = keys.indexOf(key);
+            if (keyIndex === -1) {
+                keys.push(key);
+                keyIndex = keys.length - 1;
+                values[keyIndex] = [];
             }
-            mapping[key].push(i);
+            values[keyIndex].push(i);
         });
+
         const grouping: Grouping<TValue, T>[] = [];
-        for (const property in mapping) {
-            if (mapping.hasOwnProperty(property)) {
-                grouping.push({
-                    Key: JSON.parse(property),
-                    Values: Enumerable.Of<T>(mapping[property])
-                });
-            }
+        for (let i = 0; i < keys.length; i++) {
+            grouping.push({
+                Key: keys[i],
+                Values: Enumerable.Of(values[i])
+            });
         }
+
         return Enumerable.Of(grouping);
     }
 
