@@ -158,6 +158,19 @@ export class Enumerable<T> implements Iterable<T> {
         }
     }
 
+    public ElementAtOrDefault(index: number): T | null {
+        if (index < 0) {
+            return null;
+        }
+        const skippedItems = this.Skip(index);
+        const nextItem = skippedItems.iterator.next();
+        if (nextItem.done) {
+            return null;
+        } else {
+            return nextItem.value;
+        }
+    }
+
     public First(): T;
     public First(predicate: ((item: T) => boolean)): T;
     public First(predicate?: ((item: T) => boolean)): T {
