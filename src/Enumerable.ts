@@ -22,10 +22,8 @@ export class Enumerable<T> implements Iterable<T> {
         return new Enumerable<T>(new EmptyIterator<T>(source));
     }
 
-    private makeIterator<TReturnIteratorType>(sourceIterator: ResetableIterator<T>, next: ((sourceIterator: ResetableIterator<T>) => IteratorResult<TReturnIteratorType>)) {
+    private static makeIterator<T, TReturnIteratorType>(sourceIterator: ResetableIterator<T>, next: ((sourceIterator: ResetableIterator<T>) => IteratorResult<TReturnIteratorType>)) {
         const clonedSourceIterator = sourceIterator.clone();
-        const makeIterator = this.makeIterator;
-
         const iterator: ResetableIterator<TReturnIteratorType> = {
             next: function () {
                 return next(clonedSourceIterator);
@@ -34,7 +32,7 @@ export class Enumerable<T> implements Iterable<T> {
                 clonedSourceIterator.reset();
             },
             clone: function () {
-                return makeIterator(clonedSourceIterator, next);
+                return Enumerable.makeIterator(clonedSourceIterator, next);
             }
         }
         return iterator;
@@ -107,7 +105,7 @@ export class Enumerable<T> implements Iterable<T> {
     }
 
     public Concat(second: Enumerable<T>): Enumerable<T> {
-        const newIterator = this.makeIterator<T>(this.iterator, function (sourceIterator) {
+        const newIterator = Enumerable.makeIterator<T, T>(this.iterator, function (sourceIterator) {
             let nextItem = sourceIterator.next();
             if (!nextItem.done) {
                 return nextItem;
@@ -129,7 +127,7 @@ export class Enumerable<T> implements Iterable<T> {
 
     public DistinctBy<TValue>(selector: (item: T) => TValue): Enumerable<T> {
         const seenItems: TValue[] = [];
-        const newIterator = this.makeIterator<T>(this.iterator, function (sourceIterator) {
+        const newIterator = Enumerable.makeIterator<T, T>(this.iterator, function (sourceIterator) {
             let nextItem = sourceIterator.next();
             while (!nextItem.done) {
                 const key = selector(nextItem.value);
@@ -169,6 +167,11 @@ export class Enumerable<T> implements Iterable<T> {
         } else {
             return nextItem.value;
         }
+    }
+
+    public Except(other: Enumerable<T> ): Enumerable<T> {
+        const otherArray = other.ToArray();
+        return this.Distinct().Where(a => otherArray.indexOf(a) === -1);
     }
 
     public First(): T;
@@ -234,7 +237,7 @@ export class Enumerable<T> implements Iterable<T> {
     }
 
     public Select<TReturnType>(selector: (item: T) => TReturnType): Enumerable<TReturnType> {
-        const newIterator = this.makeIterator<TReturnType>(this.iterator, function (sourceIterator) {
+        const newIterator = Enumerable.makeIterator<T, TReturnType>(this.iterator, function (sourceIterator) {
             const nextItem = sourceIterator.next();
             if (nextItem.done) {
                 return {
@@ -255,7 +258,7 @@ export class Enumerable<T> implements Iterable<T> {
             num = 0;
         }
         let skipped = false;
-        const newIterator = this.makeIterator<T>(this.iterator, function (sourceIterator) {
+        const newIterator = Enumerable.makeIterator<T, T>(this.iterator, function (sourceIterator) {
             if (!skipped) {
                 let i = 0;
                 while (i < num) {
@@ -292,7 +295,7 @@ export class Enumerable<T> implements Iterable<T> {
 
     public Take(num: number): Enumerable<T> {
         let numTaken = 0;
-        const newIterator = this.makeIterator<T>(this.iterator, function (sourceIterator) {
+        const newIterator = Enumerable.makeIterator<T, T>(this.iterator, function (sourceIterator) {
             if (numTaken >= num) {
                 return { done: true, value: <any>null };
             } else {
@@ -315,7 +318,7 @@ export class Enumerable<T> implements Iterable<T> {
     }
 
     public Where(predicate: (item: T) => boolean) {
-        const newIterator = this.makeIterator<T>(this.iterator, function (sourceIterator) {
+        const newIterator = Enumerable.makeIterator<T, T>(this.iterator, function (sourceIterator) {
             let nextItem = sourceIterator.next();
             if (nextItem.done) {
                 return nextItem;
