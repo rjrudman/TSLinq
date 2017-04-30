@@ -70,7 +70,8 @@ describe('Enumerable', () => {
                 next: function () {
                     throw new Error('Generator should not be invoked when the enumerable hasn\'t been materialized');
                 },
-                reset: function() { }
+                reset: function() { },
+                clone: function() { return generator; }
             }
 
             const result = Enumerable.Of(generator).Select(s => s + 1);

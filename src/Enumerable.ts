@@ -5,6 +5,7 @@ function isIterator<T>(obj: any): obj is ResetableIterator<T> {
 
 export interface ResetableIterator<T> extends Iterator<T> {
     reset(): void;
+    clone(): ResetableIterator<T>;
 }
 
 export class Enumerable<T> implements Iterable<T> {
@@ -16,11 +17,19 @@ export class Enumerable<T> implements Iterable<T> {
         return new Enumerable<T>(new EmptyIterator<T>(source));
     }
 
-    private makeIterator<TReturnIteratorType>(sourceIterator: ResetableIterator<T>, thing: ((value?: any) => IteratorResult<TReturnIteratorType>)) {
+    private makeIterator<TReturnIteratorType>(sourceIterator: ResetableIterator<T>, next: ((sourceIterator: ResetableIterator<T>) => IteratorResult<TReturnIteratorType>)) {
+        const clonedSourceIterator = sourceIterator.clone();
+        const makeIterator = this.makeIterator;
+
         const iterator: ResetableIterator<TReturnIteratorType> = {
-            next: thing,
+            next: function() {
+                return next(clonedSourceIterator);
+            },
             reset: function () {
-                sourceIterator.reset();
+                clonedSourceIterator.reset();
+            },
+            clone: function () {
+                return makeIterator(clonedSourceIterator, next);
             }
         }
         return iterator;
@@ -36,8 +45,7 @@ export class Enumerable<T> implements Iterable<T> {
     }
 
     public Where(predicate: (item: T) => boolean) {
-        const sourceIterator = this.iterator;
-        const newIterator = this.makeIterator<T>(sourceIterator, function () {
+        const newIterator = this.makeIterator<T>(this.iterator, function (sourceIterator) {
             let nextItem = sourceIterator.next();
             if (nextItem.done) {
                 return nextItem;
@@ -82,8 +90,7 @@ export class Enumerable<T> implements Iterable<T> {
     }
 
     public Select<TReturnType>(selector: (item: T) => TReturnType): Enumerable<TReturnType> {
-        const sourceIterator = this.iterator;
-        const newIterator = this.makeIterator<TReturnType>(sourceIterator, function () {
+        const newIterator = this.makeIterator<TReturnType>(this.iterator, function (sourceIterator) {
             const nextItem = sourceIterator.next();
             if (nextItem.done) {
                 return {
@@ -101,8 +108,7 @@ export class Enumerable<T> implements Iterable<T> {
 
     public Skip(num: number): Enumerable<T> {
         let skipped = false;
-        const sourceIterator = this.iterator;
-        const newIterator = this.makeIterator<T>(sourceIterator, function () {
+        const newIterator = this.makeIterator<T>(this.iterator, function (sourceIterator) {
             if (!skipped) {
                 let i = 0;
                 while (i < num) {
@@ -150,5 +156,9 @@ class EmptyIterator<T> implements ResetableIterator<T> {
 
     reset(): void {
         this.pointer = 0;
+    }
+
+    clone(): EmptyIterator<T> {
+        return new EmptyIterator<T>(this.source);
     }
 }
