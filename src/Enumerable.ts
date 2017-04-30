@@ -1,7 +1,15 @@
+function isIterator<T>(obj: any): obj is Iterator<T> {
+    let it = <Iterator<T>>obj;
+    return it.next !== undefined;
+}
+
 export class Enumerable<T> implements Iterable<T> {
     private iterator: Iterator<T>;
 
-    public static Of<T>(source: T[]): Enumerable<T> {
+    public static Of<T>(source: T[] | Iterator<T>): Enumerable<T> {        
+        if (isIterator(source)) {
+            return new Enumerable<T>(source);
+        }
         return new Enumerable<T>(new EmptyIterator<T>(source));
     }
 
@@ -15,6 +23,30 @@ export class Enumerable<T> implements Iterable<T> {
 
     public Where(predicate: (item: T) => boolean) {
         return new Enumerable<T>(new WhereIterator<T>(this.iterator, predicate));
+    }
+
+    public First(predicate: ((item: T) => boolean) | undefined = undefined): T {
+        if (predicate !== undefined) {
+            return this.Where(predicate).First();
+        }
+        const nextItem = this.iterator.next();
+        if (nextItem.done) {
+            throw new Error('Sequence contains no items');
+        } else {
+            return nextItem.value;
+        }
+    }
+
+    public FirstOrDefault(predicate?: ((item: T) => boolean)): T | null {
+        if (predicate !== undefined) {
+            return this.Where(predicate).FirstOrDefault();
+        }
+        const nextItem = this.iterator.next();
+        if (nextItem.done) {
+            return null;
+        } else {
+            return nextItem.value;
+        }
     }
 
     public ToArray(): T[] {
@@ -52,9 +84,9 @@ class EmptyIterator<T> implements Iterator<T> {
 
 class WhereIterator<T> implements Iterator<T> {
     private sourceIterator: Iterator<T>;
-    private predicate: (item: T) => boolean;
+    private predicate: ((item: T) => boolean) | undefined;
 
-    public constructor(sourceIterator: Iterator<T>, predicate: (item: T) => boolean) {
+    public constructor(sourceIterator: Iterator<T>, predicate: ((item: T) => boolean) | undefined) {
         this.sourceIterator = sourceIterator;
         this.predicate = predicate;
     }
@@ -65,7 +97,7 @@ class WhereIterator<T> implements Iterator<T> {
             return nextItem;
         }
         while (!nextItem.done) {
-            if (this.predicate(nextItem.value)) {
+            if (!this.predicate || this.predicate(nextItem.value)) {
                 return nextItem;
             }
             nextItem = this.sourceIterator.next();
