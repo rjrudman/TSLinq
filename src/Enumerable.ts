@@ -1,5 +1,5 @@
 function isIterator<T>(obj: any): obj is Iterator<T> {
-    let it = <Iterator<T>>obj;
+    const it = <Iterator<T>>obj;
     return it.next !== undefined;
 }
 
@@ -50,13 +50,7 @@ export class Enumerable<T> implements Iterable<T> {
     }
 
     public Select<TReturnType>(selector: (item: T) => TReturnType): Enumerable<TReturnType> {
-        const items: TReturnType[] = [];
-        let currentItem = this.iterator.next();
-        while (!currentItem.done) {
-            items.push(selector(currentItem.value));
-            currentItem = this.iterator.next();
-        }
-        return Enumerable.Of(items);
+        return new Enumerable<TReturnType>(new SelectIterator<T, TReturnType>(this.iterator, selector));
     }
 
     public ToArray(): T[] {
@@ -117,5 +111,29 @@ class WhereIterator<T> implements Iterator<T> {
             done: true,
             value: <any>null
         }
+    }
+}
+
+class SelectIterator<TSourceType, TReturnType> implements Iterator<TReturnType> {
+    private sourceIterator: Iterator<TSourceType>;
+    private selector: (item: TSourceType) => TReturnType;
+
+    public constructor(sourceIterator: Iterator<TSourceType>, selector: (item: TSourceType) => TReturnType) {
+        this.sourceIterator = sourceIterator;
+        this.selector = selector;
+    }
+
+    public next(): IteratorResult<TReturnType> {
+        const nextItem = this.sourceIterator.next();
+        if (nextItem.done) {
+            return {
+                done: true,
+                value: <any>null
+            }
+        }
+        return {
+            done: false,
+            value: this.selector(nextItem.value)
+        };
     }
 }

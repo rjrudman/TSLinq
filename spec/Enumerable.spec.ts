@@ -38,7 +38,7 @@ describe('Enumerable', () => {
         });
     });
 
-    describe('FirstOrDefault', () => {
+    describe('Select', () => {
         it('Should return me the transformed items', () => {
             const source = [1, 3];
 
@@ -63,6 +63,16 @@ describe('Enumerable', () => {
                     .ToArray();
 
             expect(result).toEqual(expected);
+        });
+
+        it('Should be lazily executed', () => {
+            const generator: Iterator<number> = {
+                next: function () {
+                    throw new Error('Generator should not be invoked when the enumerable hasn\'t been materialized');
+                }
+            }
+
+            const result = Enumerable.Of(generator).Select(s => s + 1);
         });
     })
 });
