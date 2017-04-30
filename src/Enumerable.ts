@@ -44,6 +44,14 @@ export class Enumerable<T> implements Iterable<T> {
         return this.iterator;
     }
 
+    public Any(predicate?: (item:T) => boolean) {
+        let enumerable = <Enumerable<T>>this;
+        if (predicate) {
+            enumerable = enumerable.Where(predicate);
+        }
+        return !enumerable.iterator.next().done;
+    }
+
     public Where(predicate: (item: T) => boolean) {
         const newIterator = this.makeIterator<T>(this.iterator, function (sourceIterator) {
             let nextItem = sourceIterator.next();
