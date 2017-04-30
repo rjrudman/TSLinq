@@ -1,0 +1,14 @@
+{
+  "name": "tslinq",
+  "version": "1.0.0",
+  "description": "Port of Enumerable<T> and LINQ extensions for typescript",
+  "scripts": {
+    "start": "tsc -w",
+    "test": "jasmine"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "jasmine-core": "^2.6.1"
+  }
+}
