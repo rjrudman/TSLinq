@@ -22,7 +22,7 @@ export class Enumerable<T> implements Iterable<T> {
         const makeIterator = this.makeIterator;
 
         const iterator: ResetableIterator<TReturnIteratorType> = {
-            next: function() {
+            next: function () {
                 return next(clonedSourceIterator);
             },
             reset: function () {
@@ -44,7 +44,7 @@ export class Enumerable<T> implements Iterable<T> {
         return this.iterator;
     }
 
-    public Any(predicate?: (item:T) => boolean) {
+    public Any(predicate?: (item: T) => boolean) {
         let enumerable = <Enumerable<T>>this;
         if (predicate) {
             enumerable = enumerable.Where(predicate);
@@ -129,6 +129,23 @@ export class Enumerable<T> implements Iterable<T> {
         });
 
         return Enumerable.Of(newIterator);
+    }
+
+    public Sum(selector?: (item: T) => number) {
+        if (!selector) {
+            selector = item => <number><any>item;
+        }
+
+        const enumerable = this.Select<number>(selector);
+        let num = 0;
+        enumerable.ToArray().forEach(i => {
+            if (typeof(i) === 'number') {
+                num += i;
+            } else {
+                throw new Error('Sum() is only valid on Enumerable<number>');
+            }
+        });
+        return num;
     }
 
     public Take(num: number): Enumerable<T> {
