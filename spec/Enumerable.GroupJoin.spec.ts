@@ -1,4 +1,4 @@
-import { Enumerable, ResetableIterator, Grouping } from '../src/Enumerable';
+import { Enumerable } from '../src/Enumerable';
 
 describe('Enumerable', () => {
     describe('GroupJoin', () => {

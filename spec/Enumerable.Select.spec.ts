@@ -1,4 +1,4 @@
-import { Enumerable, ResetableIterator } from '../src/Enumerable';
+import { Enumerable } from '../src/Enumerable';
 
 describe('Enumerable', () => {
    describe('Select', () => {
@@ -29,12 +29,10 @@ describe('Enumerable', () => {
         });
 
         it('Should be lazily executed', () => {
-            const generator: ResetableIterator<number> = {
+            const generator: Iterator<number> = {
                 next: function () {
                     throw new Error('Generator should not be invoked when the enumerable hasn\'t been materialized');
-                },
-                reset: function () { },
-                clone: function () { return generator; }
+                }
             }
 
             const result = Enumerable.Of(generator).Select(s => s + 1);

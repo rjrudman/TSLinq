@@ -1,4 +1,4 @@
-import { Enumerable, ResetableIterator } from '../src/Enumerable';
+import { Enumerable } from '../src/Enumerable';
 
 describe('Enumerable', () => {
     describe('Take', () => {
@@ -43,15 +43,13 @@ describe('Enumerable', () => {
 
         it('Should be lazily executed', () => {
             let i = 0;
-            const generator: ResetableIterator<number> = {
+            const generator: Iterator<number> = {
                 next: function () {
                     if (i >= 3) {
                         throw new Error('Generator should not be invoked when the enumerable hasn\'t been materialized');
                     }
                     return { done: false, value: i++ };
-                },
-                reset: function () { },
-                clone: function () { return generator; }
+                }
             };
 
             const expected: number[] = [0, 1, 2];
