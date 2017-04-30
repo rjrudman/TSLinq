@@ -6,8 +6,8 @@ describe('Enumerable', () => {
             const source = [1, 2, 3, 4, 5];
 
             const expected = <Grouping<boolean, number>[]>[
-                { Key: false, Values: [1, 3, 5] },
-                { Key: true, Values: [2, 4] },
+                { Key: false, Values: Enumerable.Of([1, 3, 5]) },
+                { Key: true, Values: Enumerable.Of([2, 4]) },
             ];
 
             const result =

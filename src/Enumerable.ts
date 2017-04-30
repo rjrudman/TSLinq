@@ -10,7 +10,7 @@ export interface ResetableIterator<T> extends Iterator<T> {
 
 export interface Grouping<T, TValue> {
     Key: T,
-    Values: TValue[]
+    Values: Enumerable<TValue>
 }
 
 export class Enumerable<T> implements Iterable<T> {
@@ -128,47 +128,8 @@ export class Enumerable<T> implements Iterable<T> {
         return this.GroupBy(a => a).Select(a => a.Key);
     }
 
-    public GroupBy<TValue>(selector: (item: T) => TValue): Enumerable<Grouping<TValue, T>> {
-        const mapping: any = {}
-
-        this.ForEach(i => {
-            const key = JSON.stringify(selector(i));
-            if (mapping[key] === undefined) {
-                mapping[key] = [];
-            }
-            mapping[key].push(i);
-        });
-        const grouping: Grouping<TValue, T>[] = [];
-        for (const property in mapping) {
-            if (mapping.hasOwnProperty(property)) {
-                grouping.push({
-                    Key: JSON.parse(property),
-                    Values: mapping[property]
-                });
-            }
-        }
-        return Enumerable.Of(grouping);
-    }
-
-    public Where(predicate: (item: T) => boolean) {
-        const newIterator = this.makeIterator<T>(this.iterator, function (sourceIterator) {
-            let nextItem = sourceIterator.next();
-            if (nextItem.done) {
-                return nextItem;
-            }
-            while (!nextItem.done) {
-                if (!predicate || predicate(nextItem.value)) {
-                    return nextItem;
-                }
-                nextItem = sourceIterator.next();
-            }
-
-            return {
-                done: true,
-                value: <any>null
-            }
-        });
-        return Enumerable.Of(newIterator);
+    public DistinctBy<TValue>(selector: (item: T) => TValue): Enumerable<T> {
+        return this.GroupBy(selector).Select(a => a.Values.First());
     }
 
     public First(): T;
@@ -205,6 +166,28 @@ export class Enumerable<T> implements Iterable<T> {
             func(item.value);
             item = this.iterator.next();
         }
+    }
+
+    public GroupBy<TValue>(selector: (item: T) => TValue): Enumerable<Grouping<TValue, T>> {
+        const mapping: any = {}
+
+        this.ForEach(i => {
+            const key = JSON.stringify(selector(i));
+            if (mapping[key] === undefined) {
+                mapping[key] = [];
+            }
+            mapping[key].push(i);
+        });
+        const grouping: Grouping<TValue, T>[] = [];
+        for (const property in mapping) {
+            if (mapping.hasOwnProperty(property)) {
+                grouping.push({
+                    Key: JSON.parse(property),
+                    Values: Enumerable.Of<T>(mapping[property])
+                });
+            }
+        }
+        return Enumerable.Of(grouping);
     }
 
     public Select<TReturnType>(selector: (item: T) => TReturnType): Enumerable<TReturnType> {
@@ -284,6 +267,28 @@ export class Enumerable<T> implements Iterable<T> {
         }
         return items;
     }
+
+    public Where(predicate: (item: T) => boolean) {
+        const newIterator = this.makeIterator<T>(this.iterator, function (sourceIterator) {
+            let nextItem = sourceIterator.next();
+            if (nextItem.done) {
+                return nextItem;
+            }
+            while (!nextItem.done) {
+                if (!predicate || predicate(nextItem.value)) {
+                    return nextItem;
+                }
+                nextItem = sourceIterator.next();
+            }
+
+            return {
+                done: true,
+                value: <any>null
+            }
+        });
+        return Enumerable.Of(newIterator);
+    }
+
 }
 
 class EmptyIterator<T> implements ResetableIterator<T> {
