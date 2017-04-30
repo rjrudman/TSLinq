@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Port of Enumerable<T> and LINQ extensions for typescript",
   "scripts": {
+    "build": "tsc",
     "start": "tsc -w",
     "test": "jasmine"
   },
@@ -10,5 +11,9 @@
   "license": "ISC",
   "devDependencies": {
     "jasmine-core": "^2.6.1"
+  },
+  "dependencies": {
+    "typescript": "^2.3.2",
+    "typings": "^2.1.1"
   }
 }
