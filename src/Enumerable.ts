@@ -94,6 +94,13 @@ export class Enumerable<T> implements Iterable<T> {
         return i;
     }
 
+    public DefaultIfEmpty(defaultValue: T): Enumerable<T> {
+        if (this.Any()) {
+            return this;
+        }
+        return Enumerable.Of<T>([defaultValue]);
+    }
+
     public Concat(second: Enumerable<T>): Enumerable<T> {
         const newIterator = this.makeIterator<T>(this.iterator, function (sourceIterator) {
             let nextItem = sourceIterator.next();
