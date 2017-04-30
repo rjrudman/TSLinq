@@ -54,6 +54,20 @@ export class Enumerable<T> implements Iterable<T> {
         return !enumerable.iterator.next().done;
     }
 
+    public Count(): number;
+    public Count(predicate: ((item: T) => boolean)): number;
+    public Count(predicate?: (item: T) => boolean) {
+        let enumerable = <Enumerable<T>>this;
+        if (predicate) {
+            enumerable = enumerable.Where(predicate);
+        }
+        let i = 0;
+        while (!enumerable.iterator.next().done) {
+            i++;
+        }
+        return i;
+    }
+
     public Where(predicate: (item: T) => boolean) {
         const newIterator = this.makeIterator<T>(this.iterator, function (sourceIterator) {
             let nextItem = sourceIterator.next();
@@ -147,7 +161,7 @@ export class Enumerable<T> implements Iterable<T> {
         const enumerable = this.Select<number>(selector);
         let num = 0;
         enumerable.ToArray().forEach(i => {
-            if (typeof(i) === 'number') {
+            if (typeof (i) === 'number') {
                 num += i;
             } else {
                 throw new Error('Sum() is only valid on Enumerable<number>');

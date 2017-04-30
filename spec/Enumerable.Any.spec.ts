@@ -33,7 +33,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .Any(i => i % 2 == 0);
+                    .Any(i => i % 2 === 0);
 
             expect(result).toEqual(expected);
         });
