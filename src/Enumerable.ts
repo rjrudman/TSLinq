@@ -8,6 +8,11 @@ export interface ResetableIterator<T> extends Iterator<T> {
     clone(): ResetableIterator<T>;
 }
 
+export interface Grouping<T, TValue> {
+    Key: T,
+    Values: TValue[]
+}
+
 export class Enumerable<T> implements Iterable<T> {
     private iterator: ResetableIterator<T>;
     public static Of<T>(source: T[] | ResetableIterator<T>): Enumerable<T> {
@@ -117,6 +122,33 @@ export class Enumerable<T> implements Iterable<T> {
     public Contains(item: T): boolean {
         return this.Any(a => a === item);
     };
+
+
+    public Distinct(): Enumerable<T> {
+        return this.GroupBy(a => a).Select(a => a.Key);
+    }
+
+    public GroupBy<TValue>(selector: (item: T) => TValue): Enumerable<Grouping<TValue, T>> {
+        const mapping: any = {}
+
+        this.ForEach(i => {
+            const key = JSON.stringify(selector(i));
+            if (mapping[key] === undefined) {
+                mapping[key] = [];
+            }
+            mapping[key].push(i);
+        });
+        const grouping: Grouping<TValue, T>[] = [];
+        for (const property in mapping) {
+            if (mapping.hasOwnProperty(property)) {
+                grouping.push({
+                    Key: JSON.parse(property),
+                    Values: mapping[property]
+                });
+            }
+        }
+        return Enumerable.Of(grouping);
+    }
 
     public Where(predicate: (item: T) => boolean) {
         const newIterator = this.makeIterator<T>(this.iterator, function (sourceIterator) {

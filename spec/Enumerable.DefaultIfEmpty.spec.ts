@@ -18,7 +18,7 @@ describe('Enumerable', () => {
             const expected = [1];
 
             const result = source.DefaultIfEmpty(1).ToArray();
-            
+
             expect(result).toEqual(expected);
         });
     });
