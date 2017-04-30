@@ -94,6 +94,19 @@ export class Enumerable<T> implements Iterable<T> {
         return i;
     }
 
+    public Concat(second: Enumerable<T>): Enumerable<T> {
+        const newIterator = this.makeIterator<T>(this.iterator, function (sourceIterator) {
+            let nextItem = sourceIterator.next();
+            if (!nextItem.done) {
+                return nextItem;
+            } else {
+                nextItem = second.iterator.next();
+            }
+            return nextItem;
+        });
+        return Enumerable.Of(newIterator);
+    };
+
     public Where(predicate: (item: T) => boolean) {
         const newIterator = this.makeIterator<T>(this.iterator, function (sourceIterator) {
             let nextItem = sourceIterator.next();
