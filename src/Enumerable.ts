@@ -1,23 +1,28 @@
-function isIterator<T>(obj: any): obj is Iterator<T> {
-    const it = <Iterator<T>>obj;
-    return it.next !== undefined;
+function isIterator<T>(obj: any): obj is ResetableIterator<T> {
+    const it = <ResetableIterator<T>>obj;
+    return it.next !== undefined && it.reset !== undefined;
+}
+
+interface ResetableIterator<T> extends Iterator<T> {
+    reset(): void;
 }
 
 export class Enumerable<T> implements Iterable<T> {
-    private iterator: Iterator<T>;
+    private iterator: ResetableIterator<T>;
 
-    public static Of<T>(source: T[] | Iterator<T>): Enumerable<T> {
+    public static Of<T>(source: T[] | ResetableIterator<T>): Enumerable<T> {
         if (isIterator(source)) {
             return new Enumerable<T>(source);
         }
         return new Enumerable<T>(new EmptyIterator<T>(source));
     }
 
-    protected constructor(iterator: Iterator<T>) {
+    protected constructor(iterator: ResetableIterator<T>) {
         this.iterator = iterator;
     }
 
     [Symbol.iterator]() {
+        this.iterator.reset();
         return this.iterator;
     }
 
@@ -53,6 +58,16 @@ export class Enumerable<T> implements Iterable<T> {
         return new Enumerable<TReturnType>(new SelectIterator<T, TReturnType>(this.iterator, selector));
     }
 
+    public Skip(num: number): Enumerable<T> {
+        for (let i = 0; i < num; i++) {
+            const currentItem = this.iterator.next();
+            if (currentItem.done) {
+                break;
+            }
+        }
+        return Enumerable.Of(this.iterator);
+    }
+
     public ToArray(): T[] {
         const items: T[] = [];
         let currentItem = this.iterator.next();
@@ -64,7 +79,7 @@ export class Enumerable<T> implements Iterable<T> {
     }
 }
 
-class EmptyIterator<T> implements Iterator<T> {
+class EmptyIterator<T> implements ResetableIterator<T> {
     private source: T[];
     private pointer = 0;
     public constructor(source: T[]) {
@@ -84,13 +99,17 @@ class EmptyIterator<T> implements Iterator<T> {
             }
         }
     }
+
+    reset(): void {
+        this.pointer = 0;
+    }
 }
 
-class WhereIterator<T> implements Iterator<T> {
-    private sourceIterator: Iterator<T>;
+class WhereIterator<T> implements ResetableIterator<T> {
+    private sourceIterator: ResetableIterator<T>;
     private predicate: ((item: T) => boolean) | undefined;
 
-    public constructor(sourceIterator: Iterator<T>, predicate: ((item: T) => boolean) | undefined) {
+    public constructor(sourceIterator: ResetableIterator<T>, predicate: ((item: T) => boolean) | undefined) {
         this.sourceIterator = sourceIterator;
         this.predicate = predicate;
     }
@@ -112,13 +131,17 @@ class WhereIterator<T> implements Iterator<T> {
             value: <any>null
         }
     }
+
+    public reset(): void {
+        this.sourceIterator.reset();
+    }
 }
 
-class SelectIterator<TSourceType, TReturnType> implements Iterator<TReturnType> {
-    private sourceIterator: Iterator<TSourceType>;
+class SelectIterator<TSourceType, TReturnType> implements ResetableIterator<TReturnType> {
+    private sourceIterator: ResetableIterator<TSourceType>;
     private selector: (item: TSourceType) => TReturnType;
 
-    public constructor(sourceIterator: Iterator<TSourceType>, selector: (item: TSourceType) => TReturnType) {
+    public constructor(sourceIterator: ResetableIterator<TSourceType>, selector: (item: TSourceType) => TReturnType) {
         this.sourceIterator = sourceIterator;
         this.selector = selector;
     }
@@ -135,5 +158,9 @@ class SelectIterator<TSourceType, TReturnType> implements Iterator<TReturnType> 
             done: false,
             value: this.selector(nextItem.value)
         };
+    }
+
+    public reset(): void {
+        this.sourceIterator.reset();
     }
 }
