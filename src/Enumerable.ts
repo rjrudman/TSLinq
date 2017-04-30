@@ -44,6 +44,8 @@ export class Enumerable<T> implements Iterable<T> {
         return this.iterator;
     }
 
+    public Any(): boolean;
+    public Any(predicate: ((item: T) => boolean)): boolean;
     public Any(predicate?: (item: T) => boolean) {
         let enumerable = <Enumerable<T>>this;
         if (predicate) {
@@ -73,6 +75,8 @@ export class Enumerable<T> implements Iterable<T> {
         return Enumerable.Of(newIterator);
     }
 
+    public First(): T;
+    public First(predicate: ((item: T) => boolean)): T;
     public First(predicate?: ((item: T) => boolean)): T {
         if (predicate !== undefined) {
             return this.Where(predicate).First();
@@ -85,6 +89,8 @@ export class Enumerable<T> implements Iterable<T> {
         }
     }
 
+    public FirstOrDefault(): T | null;
+    public FirstOrDefault(predicate: ((item: T) => boolean)): T | null;
     public FirstOrDefault(predicate?: ((item: T) => boolean)): T | null {
         if (predicate !== undefined) {
             return this.Where(predicate).FirstOrDefault();
@@ -131,6 +137,8 @@ export class Enumerable<T> implements Iterable<T> {
         return Enumerable.Of(newIterator);
     }
 
+    public Sum(): number;
+    public Sum(selector: (item: T) => number): number;
     public Sum(selector?: (item: T) => number) {
         if (!selector) {
             selector = item => <number><any>item;
