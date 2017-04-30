@@ -54,6 +54,32 @@ export class Enumerable<T> implements Iterable<T> {
         return !enumerable.iterator.next().done;
     }
 
+    public Average(): number;
+    public Average(selector: (item: T) => number): number;
+    public Average(selector?: (item: T) => number) {
+        if (!selector) {
+            selector = item => <number><any>item;
+        }
+
+        const enumerable = this.Select<number>(selector);
+        let num = 0;
+        let count = 0;
+        enumerable.ForEach(i => {
+            if (typeof (i) === 'number') {
+                num += i;
+                count++;
+            } else {
+                throw new Error('Sum() is only valid on Enumerable<number>');
+            }
+        });
+
+        if (num === 0) {
+            throw new Error('Sequence contains no elements');
+        }
+
+        return num / count;
+    }
+
     public Count(): number;
     public Count(predicate: ((item: T) => boolean)): number;
     public Count(predicate?: (item: T) => boolean) {
@@ -117,6 +143,14 @@ export class Enumerable<T> implements Iterable<T> {
         }
     }
 
+    public ForEach(func: ((item: T) => void)): void {
+        let item = this.iterator.next();
+        while (!item.done) {
+            func(item.value);
+            item = this.iterator.next();
+        }
+    }
+
     public Select<TReturnType>(selector: (item: T) => TReturnType): Enumerable<TReturnType> {
         const newIterator = this.makeIterator<TReturnType>(this.iterator, function (sourceIterator) {
             const nextItem = sourceIterator.next();
@@ -160,13 +194,14 @@ export class Enumerable<T> implements Iterable<T> {
 
         const enumerable = this.Select<number>(selector);
         let num = 0;
-        enumerable.ToArray().forEach(i => {
+        enumerable.ForEach(i => {
             if (typeof (i) === 'number') {
                 num += i;
             } else {
                 throw new Error('Sum() is only valid on Enumerable<number>');
             }
         });
+
         return num;
     }
 
