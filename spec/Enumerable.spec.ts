@@ -1,4 +1,4 @@
-import { Enumerable } from '../src/Enumerable';
+import { Enumerable, ResetableIterator } from '../src/Enumerable';
 
 describe('Enumerable', () => {
     describe('Where', () => {
@@ -66,13 +66,42 @@ describe('Enumerable', () => {
         });
 
         it('Should be lazily executed', () => {
-            const generator: Iterator<number> = {
+            const generator: ResetableIterator<number> = {
                 next: function () {
                     throw new Error('Generator should not be invoked when the enumerable hasn\'t been materialized');
-                }
+                },
+                reset: function() { }
             }
 
             const result = Enumerable.Of(generator).Select(s => s + 1);
+        });
+    });
+
+    describe('Skip', () => {
+        it('Should skip n number of elements', () => {
+            const source = [1, 2, 3, 4, 5];
+
+            const expected = [3, 4, 5];
+
+            const result =
+                Enumerable.Of(source)
+                    .Skip(2)
+                    .ToArray();
+
+            expect(result).toEqual(expected);
+        });
+
+        it('Should not fail when skipping more than the number of elements', () => {
+            const source = [1, 2, 3, 4, 5];
+
+            const expected: number[] = [];
+
+            const result =
+                Enumerable.Of(source)
+                    .Skip(7)
+                    .ToArray();
+
+            expect(result).toEqual(expected);
         });
     })
 });

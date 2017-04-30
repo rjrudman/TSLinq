@@ -3,7 +3,7 @@ function isIterator<T>(obj: any): obj is ResetableIterator<T> {
     return it.next !== undefined && it.reset !== undefined;
 }
 
-interface ResetableIterator<T> extends Iterator<T> {
+export interface ResetableIterator<T> extends Iterator<T> {
     reset(): void;
 }
 
@@ -92,7 +92,6 @@ class EmptyIterator<T> implements ResetableIterator<T> {
                 value: this.source[this.pointer++]
             }
         } else {
-            this.pointer = 0;
             return {
                 done: true,
                 value: <any>null
