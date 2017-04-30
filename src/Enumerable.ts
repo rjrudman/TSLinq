@@ -132,6 +132,19 @@ export class Enumerable<T> implements Iterable<T> {
         return this.GroupBy(selector).Select(a => a.Values.First());
     }
 
+    public ElementAt(index: number): T {
+        if (index < 0) {
+            throw new Error('Index was out of range. Must be non-negative and less than the size of the collection');
+        }
+        const skippedItems = this.Skip(index);
+        const nextItem = skippedItems.iterator.next();
+        if (nextItem.done) {
+            throw new Error('Index was out of range. Must be non-negative and less than the size of the collection');
+        } else {
+            return nextItem.value;
+        }
+    }
+
     public First(): T;
     public First(predicate: ((item: T) => boolean)): T;
     public First(predicate?: ((item: T) => boolean)): T {
@@ -208,6 +221,9 @@ export class Enumerable<T> implements Iterable<T> {
     }
 
     public Skip(num: number): Enumerable<T> {
+        if (num < 0) {
+            num = 0;
+        }
         let skipped = false;
         const newIterator = this.makeIterator<T>(this.iterator, function (sourceIterator) {
             if (!skipped) {
