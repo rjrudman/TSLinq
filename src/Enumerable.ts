@@ -50,6 +50,10 @@ export class Enumerable<T> implements Iterable<T> {
         return resultSelector(seed);
     }
 
+    public All(predicate: (item: T) => boolean) {
+        return !this.Any(i => !predicate(i));
+    }
+
     public Any(): boolean;
     public Any(predicate: ((item: T) => boolean)): boolean;
     public Any(predicate?: (item: T) => boolean) {
