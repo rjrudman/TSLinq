@@ -38,6 +38,18 @@ export class Enumerable<T> implements Iterable<T> {
         return this.iteratorGetter();
     }
 
+    public Aggregate<TAccumulate, TResult>(
+        seed: TAccumulate,
+        accumulator: (accumulate: TAccumulate, next: T) => TAccumulate,
+        resultSelector: (item: TAccumulate) => TResult = (result) => <TResult><any>result
+    ): TResult {
+        this.ForEach(a => {
+            seed = accumulator(seed, a);
+        });
+
+        return resultSelector(seed);
+    }
+
     public Any(): boolean;
     public Any(predicate: ((item: T) => boolean)): boolean;
     public Any(predicate?: (item: T) => boolean) {
