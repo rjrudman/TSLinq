@@ -65,7 +65,7 @@ export class Enumerable<T> implements Iterable<T> {
         return Enumerable.Of(newIterator);
     }
 
-    public First(predicate: ((item: T) => boolean) | undefined = undefined): T {
+    public First(predicate?: ((item: T) => boolean)): T {
         if (predicate !== undefined) {
             return this.Where(predicate).First();
         }
@@ -118,6 +118,20 @@ export class Enumerable<T> implements Iterable<T> {
                 skipped = true;
             }
             return <IteratorResult<T>>sourceIterator.next()
+        });
+
+        return Enumerable.Of(newIterator);
+    }
+
+    public Take(num: number): Enumerable<T> {
+        let numTaken = 0;
+        const newIterator = this.makeIterator<T>(this.iterator, function (sourceIterator) {
+            if (numTaken >= num) {
+                return { done: true, value: <any>null };
+            } else {
+                numTaken++;
+                return sourceIterator.next();
+            }
         });
 
         return Enumerable.Of(newIterator);
