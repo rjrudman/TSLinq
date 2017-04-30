@@ -169,7 +169,7 @@ export class Enumerable<T> implements Iterable<T> {
         }
     }
 
-    public Except(other: Enumerable<T> ): Enumerable<T> {
+    public Except(other: Enumerable<T>): Enumerable<T> {
         const otherArray = other.ToArray();
         return this.Distinct().Where(a => otherArray.indexOf(a) === -1);
     }
@@ -234,6 +234,32 @@ export class Enumerable<T> implements Iterable<T> {
         }
 
         return Enumerable.Of(grouping);
+    }
+
+    public GroupJoin<TInner, TKey, TResult>(inner: Enumerable<TInner>,
+        outerKeySelector: ((item: T) => TKey),
+        innerKeySelector: ((item: TInner) => TKey),
+        resultSelector: ((originalRow: T, innerRows: Enumerable<TInner>) => TResult)): Enumerable<TResult> {
+
+        const newIterator = Enumerable.makeIterator<T, TResult>(this.iterator, function (sourceIterator) {
+            const nextItem = sourceIterator.next();
+            if (!nextItem.done) {
+                const outerKey = outerKeySelector(nextItem.value);
+                const innerRows = inner.Where(i => innerKeySelector(i) === outerKey);
+                const result = resultSelector(nextItem.value, innerRows);
+
+                return {
+                    done: false,
+                    value: result
+                }
+            }
+            return {
+                done: true,
+                value: <any>null
+            }
+        });
+
+        return Enumerable.Of(newIterator);
     }
 
     public Select<TReturnType>(selector: (item: T) => TReturnType): Enumerable<TReturnType> {
