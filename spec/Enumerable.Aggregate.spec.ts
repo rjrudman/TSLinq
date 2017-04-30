@@ -14,6 +14,18 @@ describe('Enumerable', () => {
             expect(result).toEqual(expected);
         });
 
+        it('Should return me the aggregated items with a result selector', () => {
+            const source = [1, 2, 2, 3];
+
+            const expected = 13;
+
+            const result =
+                Enumerable.Of(source)
+                    .Aggregate(0, (left, right) => left + right, (res) => res + 5);
+
+            expect(result).toEqual(expected);
+        });
+
         it('Should not fail when sequence is empty', () => {
             const source: number[] = [];
 
