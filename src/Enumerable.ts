@@ -318,6 +318,18 @@ export class Enumerable<T> implements Iterable<T> {
         return Enumerable.Of(newIterator);
     }
 
+    public Reverse(): Enumerable<T> {
+        let src = this.ToArray();
+        let pointer = src.length - 1;
+        return Enumerable.Of({
+            next: function () {
+                if (pointer < 0) {
+                    return { done: true, value: <any>null }
+                }
+                return { done: false, value: <T>src[pointer--] }
+            }
+        });
+    }
 
     public Select<TReturnType>(selector: (item: T) => TReturnType): Enumerable<TReturnType> {
         const newIterator = Enumerable.makeIterator<T, TReturnType>(this.iteratorGetter(), function (sourceIterator) {
