@@ -165,17 +165,7 @@ export class Enumerable<T> implements Iterable<T> {
      * @param second The sequence to concatenate
      */
     public Concat(second: Enumerable<T>): Enumerable<T> {
-        const secondIterator = second.iteratorGetter();
-        const newIterator = Enumerable.makeIterator<T, T>(this.iteratorGetter(), function (sourceIterator) {
-            let nextItem = sourceIterator.next();
-            if (!nextItem.done) {
-                return nextItem;
-            } else {
-                nextItem = secondIterator.next();
-            }
-            return nextItem;
-        });
-        return Enumerable.Of(newIterator);
+        return Enumerable.Of([this, second]).SelectMany(a => a);
     };
 
     /**
