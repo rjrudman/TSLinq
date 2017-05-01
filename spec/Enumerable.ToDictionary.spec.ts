@@ -1,4 +1,4 @@
-import { Enumerable, Grouping } from '../src/Enumerable';
+import { Enumerable, Grouping } from '../src/TSLinq';
 
 describe('Enumerable', () => {
     describe('ToDictionary', () => {

@@ -1,4 +1,4 @@
-import { Enumerable } from '../src/Enumerable';
+import { Enumerable } from '../src/TSLinq';
 
 describe('Enumerable', () => {
    describe('Count', () => {
