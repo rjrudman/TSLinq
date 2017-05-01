@@ -9,6 +9,7 @@
   },
   "author": "rjrudman",
   "license": "ISC",
+  "main": "dist/Enumerable.js",
   "devDependencies": {
     "jasmine-core": "^2.6.1",
     "tslint": "^5.1.0"

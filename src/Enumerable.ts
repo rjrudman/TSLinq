@@ -290,7 +290,7 @@ export class Enumerable<T> implements Iterable<T> {
         const newIterator = Enumerable.makeIterator<T, TResult>(this.iteratorGetter(), function (sourceIterator) {
             while (true) {
                 if (!currentRow) {
-                    let nextItem = sourceIterator.next();
+                    const nextItem = sourceIterator.next();
                     if (nextItem.done) {
                         return <IteratorResult<TResult>>{
                             done: true,
@@ -299,18 +299,18 @@ export class Enumerable<T> implements Iterable<T> {
                     }
 
                     currentRow = nextItem.value;
-                    let outerKey = outerKeySelector(currentRow);
+                    const outerKey = outerKeySelector(currentRow);
                     innerRowsIterator = inner.Where(i => innerKeySelector(i) === outerKey).iteratorGetter();
                 }
 
-                let nextInner = innerRowsIterator.next();
+                const nextInner = innerRowsIterator.next();
                 if (nextInner.done) {
                     currentRow = undefined
                 } else {
-                    let left = currentRow;
-                    let right = nextInner.value;
+                    const left = currentRow;
+                    const right = nextInner.value;
 
-                    let result = resultSelector(left, right);
+                    const result = resultSelector(left, right);
                     return <IteratorResult<TResult>>{
                         done: false,
                         value: result
@@ -401,7 +401,7 @@ export class Enumerable<T> implements Iterable<T> {
     }
 
     public Reverse(): Enumerable<T> {
-        let src = this.ToArray();
+        const src = this.ToArray();
         let pointer = src.length - 1;
         return Enumerable.Of({
             next: function () {
@@ -431,13 +431,13 @@ export class Enumerable<T> implements Iterable<T> {
     }
 
     public SelectMany<TReturnType>(selector: (item: T) => Enumerable<TReturnType>): Enumerable<TReturnType> {
-        let foreignRows = this.Select(selector);
-        let foreignRowIterator = foreignRows.iteratorGetter();
+        const foreignRows = this.Select(selector);
+        const foreignRowIterator = foreignRows.iteratorGetter();
         let currentRowIterator: Iterator<TReturnType> | undefined;
         const newIterator = Enumerable.makeIterator<T, TReturnType>(this.iteratorGetter(), function (sourceIterator) {
             while (true) {
                 if (currentRowIterator) {
-                    let nextRow = currentRowIterator.next();
+                    const nextRow = currentRowIterator.next();
                     if (!nextRow.done) {
                         return {
                             done: false,
@@ -446,7 +446,7 @@ export class Enumerable<T> implements Iterable<T> {
                     }
                 }
 
-                let nextSet = foreignRowIterator.next();
+                const nextSet = foreignRowIterator.next();
                 if (nextSet.done) {
                     return {
                         done: true,
@@ -460,8 +460,9 @@ export class Enumerable<T> implements Iterable<T> {
     }
 
     public SequenceEqual(inner: Enumerable<T>): boolean {
-        if (this.Count() !== inner.Count())
+        if (this.Count() !== inner.Count()) {
             return false;
+        }
 
         return this.Zip(inner, (left, right) => { return { left, right } })
             .All(item => item.left === item.right);
@@ -474,7 +475,7 @@ export class Enumerable<T> implements Iterable<T> {
             return this.Where(predicate).First();
         }
 
-        let iterator = this.iteratorGetter();
+        const iterator = this.iteratorGetter();
         const nextItem = iterator.next();
         if (nextItem.done) {
             throw new Error('Sequence contains no elements');
@@ -492,7 +493,7 @@ export class Enumerable<T> implements Iterable<T> {
             return this.Where(predicate).First();
         }
 
-        let iterator = this.iteratorGetter();
+        const iterator = this.iteratorGetter();
         const nextItem = iterator.next();
         if (nextItem.done) {
             return null;
@@ -573,7 +574,7 @@ export class Enumerable<T> implements Iterable<T> {
 
     public TakeWhile(predicate: (item: T) => boolean): Enumerable<T> {
         const newIterator = Enumerable.makeIterator<T, T>(this.iteratorGetter(), function (sourceIterator) {
-            let currentItem = sourceIterator.next();
+            const currentItem = sourceIterator.next();
             if (currentItem.done || predicate(currentItem.value)) {
                 return currentItem;
             } else {
@@ -596,7 +597,7 @@ export class Enumerable<T> implements Iterable<T> {
     }
 
     public ToDictionary<TValue>(keySelector: (item: T) => string, valueSelector?: (item: T) => TValue): any {
-        let returnObject: any = {};
+        const returnObject: any = {};
         this.GroupBy(g => keySelector(g))
             .ForEach(item => {
                 let transformedValues: any = item.Values;
@@ -638,17 +639,17 @@ export class Enumerable<T> implements Iterable<T> {
     }
 
     public Zip<TInner, TResult>(inner: Enumerable<TInner>, selector: (left: T, right: TInner) => TResult): Enumerable<TResult> {
-        let innerIterator = inner.iteratorGetter();
+        const innerIterator = inner.iteratorGetter();
         const newIterator = Enumerable.makeIterator<T, TResult>(this.iteratorGetter(), function (sourceIterator) {
-            let left = sourceIterator.next();
+            const left = sourceIterator.next();
             if (left.done) {
                 return { done: true, value: <any>null };
             }
-            let right = innerIterator.next();
+            const right = innerIterator.next();
             if (right.done) {
                 return { done: true, value: <any>null };
             }
-            let result = selector(left.value, right.value);
+            const result = selector(left.value, right.value);
             return { done: false, value: result };
         });
         return Enumerable.Of(newIterator);
@@ -666,7 +667,7 @@ export class OrderedEnumerable<T> extends Enumerable<T> {
         super(iteratorGetter);
         this.orders = orders;
 
-        let currentSrc = new Enumerable<T>(iteratorGetter);
+        const currentSrc = new Enumerable<T>(iteratorGetter);
         let pointer = 0;
         let srcArray: T[] | undefined;
         this.iteratorGetter = () => {
@@ -676,8 +677,8 @@ export class OrderedEnumerable<T> extends Enumerable<T> {
                         srcArray = currentSrc.ToArray().sort((left: T, right: T) => {
                             let currentResult = 0;
                             for (let i = 0; i < orders.length; i++) {
-                                let order = orders[i];
-                                let orderSelector = order.Selector;
+                                const order = orders[i];
+                                const orderSelector = order.Selector;
                                 if (currentResult === 0) {
                                     if (order.Direction === 'ASC') {
                                         currentResult = orderSelector(left) - orderSelector(right);
