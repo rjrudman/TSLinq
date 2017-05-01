@@ -1,5 +1,5 @@
 // Thanks to http://stackoverflow.com/a/1997811/563532
-function getObjectIdFunc() {
+const getObjectId: ((obj: any) => number) = function () {
     let id = 0;
     return function (o: any) {
         if (typeof o.__uniqueid === 'undefined') {
@@ -12,8 +12,14 @@ function getObjectIdFunc() {
 
         return o.__uniqueid;
     };
-};
-const getObjectId: ((obj: any) => number) = getObjectIdFunc();
+}();
+
+function getKey(key: any) {
+    if (typeof (key) === 'object') {
+        return getObjectId(key);
+    }
+    return JSON.stringify(key);
+}
 
 function isIterator<T>(obj: any): obj is Iterator<T> {
     const it = <Iterator<T>>obj;
@@ -177,7 +183,8 @@ export class Enumerable<T> implements Iterable<T> {
      * @param item The element to search for
      */
     public Contains(element: T): boolean {
-        return this.Any(a => a === element);
+        const elementKey = getKey(element);
+        return this.Any(a => getKey(a) === elementKey);
     };
 
     /**
@@ -979,19 +986,12 @@ export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>>
         super(() => this);
     }
 
-    protected getKey(key: TKey) {
-        if (typeof (key) === 'object') {
-            return getObjectId(key);
-        }
-        return JSON.stringify(key);
-    }
-
     /**
      * Returns the value associated with the key. If the key is not present, an error is thrown
      * @param key The key to search for.
      */
     public Get(key: TKey): TValue {
-        const id = this.getKey(key);
+        const id = getKey(key);
         const result = this.holder[id];
         if (result === undefined) {
             throw new Error('The given key was not present in the dictionary.')
@@ -1004,7 +1004,7 @@ export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>>
      * @param key The key to search for.
      */
     public TryGetValue(key: TKey): TValue | undefined {
-        const id = this.getKey(key);
+        const id = getKey(key);
         const result = this.holder[id];
         return result;
     }
@@ -1014,7 +1014,7 @@ export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>>
      * @param key The key to search for.
      */
     public ContainsKey(key: TKey): boolean {
-        const id = this.getKey(key);
+        const id = getKey(key);
         const result = this.holder[id];
         return result !== undefined;
     }
@@ -1069,7 +1069,7 @@ export class Dictionary<TKey, TValue> extends Lookup<TKey, TValue> {
         if (this.TryGetValue(key)) {
             throw new Error('An item with the same key has already been added.');
         }
-        const id = this.getKey(key);
+        const id = getKey(key);
         this.holder[id] = value;
         this.keys.push(key);
         this.values.push(value);
@@ -1081,7 +1081,7 @@ export class Dictionary<TKey, TValue> extends Lookup<TKey, TValue> {
      * @param value The value to add for the supplied key.
      */
     public AddOrReplace(key: TKey, value: TValue): void {
-        const id = this.getKey(key);
+        const id = getKey(key);
         const didExist = this.TryGetValue(key);
 
         if (!didExist) {
