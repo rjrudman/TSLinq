@@ -272,6 +272,49 @@ export class Enumerable<T> implements Iterable<T> {
         return Enumerable.Of(newIterator);
     }
 
+    public Join<TInner, TKey, TResult>(inner: Enumerable<TInner>,
+        outerKeySelector: ((item: T) => TKey),
+        innerKeySelector: ((item: TInner) => TKey),
+        resultSelector: ((originalRow: T, innerRow: TInner) => TResult)): Enumerable<TResult> {
+
+        let currentRow: T | undefined;
+        let innerRowsIterator: Iterator<TInner>;
+        const newIterator = Enumerable.makeIterator<T, TResult>(this.iteratorGetter(), function (sourceIterator) {
+            while (true) {
+                if (!currentRow) {
+                    let nextItem = sourceIterator.next();
+                    if (nextItem.done) {
+                        return <IteratorResult<TResult>>{
+                            done: true,
+                            value: <any>null
+                        };
+                    }
+                    
+                    currentRow = nextItem.value;
+                    let outerKey = outerKeySelector(currentRow);
+                    innerRowsIterator = inner.Where(i => innerKeySelector(i) === outerKey).iteratorGetter();
+                }
+
+                let nextInner = innerRowsIterator.next();
+                if (nextInner.done) {
+                    currentRow = undefined
+                } else {
+                    let left = currentRow;
+                    let right = nextInner.value;
+
+                    let result = resultSelector(left, right);
+                    return <IteratorResult<TResult>>{
+                        done: false,
+                        value: result
+                    }
+                }
+            }
+        });
+
+        return Enumerable.Of(newIterator);
+    }
+
+
     public Select<TReturnType>(selector: (item: T) => TReturnType): Enumerable<TReturnType> {
         const newIterator = Enumerable.makeIterator<T, TReturnType>(this.iteratorGetter(), function (sourceIterator) {
             const nextItem = sourceIterator.next();
