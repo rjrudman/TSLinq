@@ -17,6 +17,10 @@
     "type": "git",
     "url": "https://github.com/rjrudman/TSLinq.git"
   },
+  "files": [
+    "dist/src",
+    "readme.md"
+  ],
   "dependencies": {
     "typescript": "^2.3.2",
     "typings": "^2.1.1"
