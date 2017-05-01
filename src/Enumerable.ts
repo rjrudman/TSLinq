@@ -377,9 +377,13 @@ export class Enumerable<T> implements Iterable<T> {
         return Enumerable.Of<TReturnType>(newIterator);
     }
 
-    // public SequenceEqual(inner: Enumerable<T>): boolean {
-
-    // }
+    public SequenceEqual(inner: Enumerable<T>): boolean {
+        if (this.Count() !== inner.Count())
+            return false;
+            
+        return this.Zip(inner, (left, right) => { return { left, right } })
+                   .All(item => item.left === item.right);
+    }
 
     public Skip(num: number): Enumerable<T> {
         if (num < 0) {
