@@ -696,6 +696,7 @@ export class Enumerable<T> implements Iterable<T> {
             num = 0;
         }
         let numTaken = 0;
+        // We use makeIterator here instead of SelectMany, as we don't want to iterate past the number we're supposed to take.
         const newIterator = Enumerable.makeIterator<T, T>(this.iteratorGetter(), function (sourceIterator) {
             if (numTaken >= num) {
                 return { done: true, value: <any>null };
@@ -707,7 +708,6 @@ export class Enumerable<T> implements Iterable<T> {
 
         return Enumerable.Of(newIterator);
     }
-
 
     /**
      * Takes only while the predicate is true.
@@ -804,24 +804,13 @@ export class Enumerable<T> implements Iterable<T> {
      * @param predicate The predicate to invoke on each element
      */
     public Where(predicate: (item: T) => boolean) {
-        const newIterator = Enumerable.makeIterator<T, T>(this.iteratorGetter(), function (sourceIterator) {
-            let nextItem = sourceIterator.next();
-            if (nextItem.done) {
-                return nextItem;
-            }
-            while (!nextItem.done) {
-                if (!predicate || predicate(nextItem.value)) {
-                    return nextItem;
-                }
-                nextItem = sourceIterator.next();
-            }
-
-            return {
-                done: true,
-                value: <any>null
+        return this.SelectMany(a => {
+            if (predicate(a)) {
+                return Enumerable.Of([a]);
+            } else {
+                return Enumerable.Of([]);
             }
         });
-        return Enumerable.Of(newIterator);
     }
 
     /**
@@ -831,19 +820,14 @@ export class Enumerable<T> implements Iterable<T> {
      */
     public Zip<TInner, TResult>(inner: Enumerable<TInner>, selector: (left: T, right: TInner) => TResult): Enumerable<TResult> {
         const innerIterator = inner.iteratorGetter();
-        const newIterator = Enumerable.makeIterator<T, TResult>(this.iteratorGetter(), function (sourceIterator) {
-            const left = sourceIterator.next();
-            if (left.done) {
-                return { done: true, value: <any>null };
+        return this.SelectMany(a => {
+            const nextInner = innerIterator.next();
+            if (nextInner.done) {
+                return Enumerable.Of([]);
+            } else {
+                return Enumerable.Of([selector(a, nextInner.value)]);
             }
-            const right = innerIterator.next();
-            if (right.done) {
-                return { done: true, value: <any>null };
-            }
-            const result = selector(left.value, right.value);
-            return { done: false, value: result };
-        });
-        return Enumerable.Of(newIterator);
+        })
     }
 }
 
