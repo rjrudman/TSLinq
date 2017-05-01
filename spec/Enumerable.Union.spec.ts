@@ -1,16 +1,16 @@
 import { Enumerable } from '../src/Enumerable';
 
 describe('Enumerable', () => {
-    describe('Concat', () => {
-        it('Should return the two concatenated sources', () => {
-            const source = [1, 2, 3];
+    describe('Union', () => {
+        it('Should return the distinct elements of each source', () => {
+            const source = [1, 2, 3, 4];
             const source2 = [4, 5];
 
             const expected = [1, 2, 3, 4, 5];
 
             const result =
                 Enumerable.Of(source)
-                    .Concat(Enumerable.Of(source2))
+                    .Union(Enumerable.Of(source2))
                     .ToArray();
 
             expect(result).toEqual(expected);
@@ -24,7 +24,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .Concat(Enumerable.Of(source2))
+                    .Union(Enumerable.Of(source2))
                     .ToArray();
 
             expect(result).toEqual(expected);
@@ -38,7 +38,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .Concat(Enumerable.Of(source2))
+                    .Union(Enumerable.Of(source2))
                     .ToArray();
 
             expect(result).toEqual(expected);
@@ -52,7 +52,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .Concat(Enumerable.Of(source2))
+                    .Union(Enumerable.Of(source2))
                     .ToArray();
 
             expect(result).toEqual(expected);

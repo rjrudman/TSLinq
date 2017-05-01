@@ -513,6 +513,10 @@ export class Enumerable<T> implements Iterable<T> {
         return items;
     }
 
+    public Union(inner: Enumerable<T>): Enumerable<T> {
+        return this.Concat(inner).Distinct();
+    }
+
     public Where(predicate: (item: T) => boolean) {
         const newIterator = Enumerable.makeIterator<T, T>(this.iteratorGetter(), function (sourceIterator) {
             let nextItem = sourceIterator.next();
