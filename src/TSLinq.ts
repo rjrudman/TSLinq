@@ -250,29 +250,20 @@ export class Enumerable<T> implements Iterable<T> {
     }
 
     public GroupBy<TValue>(selector: (item: T) => TValue): Enumerable<Grouping<TValue, T>> {
-        const keys: TValue[] = [];
-        const values: T[][] = [];
-
+        const dictionary = new Dictionary<TValue, T[]>();
         this.ForEach(i => {
             const key = selector(i);
-            let keyIndex = keys.indexOf(key);
-            if (keyIndex === -1) {
-                keys.push(key);
-                keyIndex = keys.length - 1;
-                values[keyIndex] = [];
+            if (!dictionary.ContainsKey(key)) {
+                dictionary.Add(key, []);
             }
-            values[keyIndex].push(i);
+            dictionary.Get(key).push(i);
         });
-
-        const grouping: Grouping<TValue, T>[] = [];
-        for (let i = 0; i < keys.length; i++) {
-            grouping.push({
-                Key: keys[i],
-                Values: Enumerable.Of(values[i])
-            });
-        }
-
-        return Enumerable.Of(grouping);
+        return dictionary.Select(d => {
+            return {
+                Key: d.Key,
+                Values: Enumerable.Of(d.Value)
+            }
+        })
     }
 
     public GroupJoin<TInner, TKey, TResult>(inner: Enumerable<TInner>,
@@ -785,17 +776,27 @@ export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>>
         return result;
     }
 
+    public ContainsKey(key: TKey): boolean {
+        const id = this.getKey(key);
+        const result = this.holder[id];
+        return result !== undefined;
+    }
+
     next(value?: any): IteratorResult<KeyValuePair<TKey, TValue>> {
-        if (this.pointer >= this.keys.length - 1) {
-            return { done: true, value: <any>null };
-        }
-        const key = this.keys[this.pointer++];
-        return {
-            done: false, value: {
-                Key: key,
-                Value: this.Get(key)
+        if (this.pointer < this.keys.length) {
+            const key = this.keys[this.pointer++];
+            return {
+                done: false, value: {
+                    Key: key,
+                    Value: this.Get(key)
+                }
+            };
+        } else {
+            return {
+                done: true,
+                value: <any>null
             }
-        };
+        }
     }
     reset(value?: any): IteratorResult<KeyValuePair<TKey, TValue>> {
         this.pointer = 0;
@@ -814,11 +815,13 @@ export class Dictionary<TKey, TValue> extends Lookup<TKey, TValue> {
         }
         const id = this.getKey(key);
         this.holder[id] = value;
+        this.keys.push(key);
     }
 
     public AddOrReplace(key: TKey, value: TValue): void {
         const id = this.getKey(key);
         this.holder[id] = value;
+        this.keys.push(key);
     }
 
     public get Keys(): Enumerable<TKey> {
