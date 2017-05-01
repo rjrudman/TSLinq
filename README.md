@@ -1,5 +1,6 @@
 # TSLinq
 
+[![Version](https://img.shields.io/npm/v/tslinq.svg)](https://npmjs.com/packages/tslinq)
 [![Build Status](https://travis-ci.org/rjrudman/TSLinq.svg?branch=master)](https://travis-ci.org/rjrudman/TSLinq)
 [![dependencies Status](https://david-dm.org/rjrudman/tslinq/status.svg)](https://david-dm.org/rjrudman/tslinq)
 [![devDependencies Status](https://david-dm.org/rjrudman/tslinq/dev-status.svg)](https://david-dm.org/rjrudman/tslinq?type=dev)
