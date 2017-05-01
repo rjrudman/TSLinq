@@ -164,13 +164,13 @@ export class Enumerable<T> implements Iterable<T> {
     }
 
     public DistinctBy<TValue>(selector: (item: T) => TValue): Enumerable<T> {
-        const seenItems: TValue[] = [];
+        const dictionary = new Dictionary<TValue, null>();
         const newIterator = Enumerable.makeIterator<T, T>(this.iteratorGetter(), function (sourceIterator) {
             let nextItem = sourceIterator.next();
             while (!nextItem.done) {
                 const key = selector(nextItem.value);
-                if (seenItems.indexOf(key) === -1) {
-                    seenItems.push(key);
+                if (!dictionary.ContainsKey(key)) {
+                    dictionary.Add(key, null);
                     return nextItem;
                 }
                 nextItem = sourceIterator.next();
@@ -816,12 +816,18 @@ export class Dictionary<TKey, TValue> extends Lookup<TKey, TValue> {
         const id = this.getKey(key);
         this.holder[id] = value;
         this.keys.push(key);
+        this.values.push(value);
     }
 
     public AddOrReplace(key: TKey, value: TValue): void {
         const id = this.getKey(key);
+        const didExist = this.TryGetValue(key);
+
+        if (!didExist) {
+            this.keys.push(key);
+        }
         this.holder[id] = value;
-        this.keys.push(key);
+        this.values.push(value);
     }
 
     public get Keys(): Enumerable<TKey> {
