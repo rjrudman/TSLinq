@@ -377,6 +377,10 @@ export class Enumerable<T> implements Iterable<T> {
         return Enumerable.Of<TReturnType>(newIterator);
     }
 
+    // public SequenceEqual(inner: Enumerable<T>): boolean {
+
+    // }
+
     public Skip(num: number): Enumerable<T> {
         if (num < 0) {
             num = 0;
@@ -463,6 +467,22 @@ export class Enumerable<T> implements Iterable<T> {
         return Enumerable.Of(newIterator);
     }
 
+    public Zip<TInner, TResult>(inner: Enumerable<TInner>, selector: (left: T, right: TInner) => TResult): Enumerable<TResult> {
+        let innerIterator = inner.iteratorGetter();
+        const newIterator = Enumerable.makeIterator<T, TResult>(this.iteratorGetter(), function (sourceIterator) {
+            let left = sourceIterator.next();
+            if (left.done) {
+                return { done: true, value: <any>null };
+            }
+            let right = innerIterator.next();
+            if (right.done) {
+                return { done: true, value: <any>null };
+            }
+            let result = selector(left.value, right.value);
+            return { done: false, value: result };
+        });
+        return Enumerable.Of(newIterator);
+    }
 }
 
 class EmptyIterator<T> implements Iterator<T> {
