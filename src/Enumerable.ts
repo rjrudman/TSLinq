@@ -11,6 +11,10 @@ export interface Grouping<T, TValue> {
 export class Enumerable<T> implements Iterable<T> {
     protected iteratorGetter: () => Iterator<T>;
 
+    /**
+     * Creates an Enumerable which encapsulates the provided source
+     * @param source Either an array of T, or an Iterator<T>. An Iterator<T> can be manually created, or using function generators.
+     */
     public static Of<T>(source: T[] | Iterator<T>): Enumerable<T> {
         if (isIterator(source)) {
             return new Enumerable<T>(() => source);
@@ -38,16 +42,34 @@ export class Enumerable<T> implements Iterable<T> {
         return this.iteratorGetter();
     }
 
+    /**
+     * Aggregates the enumerable with an initial seed and an accumulator function
+     * @param seed The initial accumulator value
+     * @param accumulator The accumulator function which is invoked on each element.
+     */
+    public Aggregate<TAccumulate>(seed: TAccumulate, accumulator: (accumulate: TAccumulate, next: T) => TAccumulate): TAccumulate;
+
+    /**
+     * Aggregates the enumerable with an initial seed and an accumulator function
+     * @param seed The initial accumulator value
+     * @param accumulator The accumulator function which is invoked on each element.
+     * @param resultSelector A function which takes the final result and applies a transform.
+     */
+    public Aggregate<TAccumulate, TResult>(seed: TAccumulate, accumulator: (accumulate: TAccumulate, next: T) => TAccumulate, resultSelector: (item: TAccumulate) => TResult): TResult;
     public Aggregate<TAccumulate, TResult>(
         seed: TAccumulate,
         accumulator: (accumulate: TAccumulate, next: T) => TAccumulate,
-        resultSelector: (item: TAccumulate) => TResult = (result) => <TResult><any>result
-    ): TResult {
+        resultSelector?: (item: TAccumulate) => TResult
+    ): TAccumulate | TResult {
         this.ForEach(a => {
             seed = accumulator(seed, a);
         });
 
-        return resultSelector(seed);
+        if (!resultSelector) {
+            return seed;
+        } else {
+            return resultSelector(seed);
+        }
     }
 
     public All(predicate: (item: T) => boolean) {
