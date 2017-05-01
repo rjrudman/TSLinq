@@ -2,14 +2,28 @@
   "name": "tslinq",
   "version": "1.0.1",
   "description": "Implementation of LINQ and lazily executed enumerables for typescript.",
+  "typescript": {
+    "definition": "dist/linq.d.ts"
+  },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -d",
     "start": "tsc -w",
     "test": "jasmine"
   },
-  "author": "rjrudman",
+  "keywords": [
+    "linq", "typescript", "es6", "es5", "generators"
+  ],
+  "author": {
+    "name": "Robert Rudman",
+    "email": "rjrudman@gmail.com",
+    "url": "https://github.com/rjrudman/TSLinq"
+  },
   "license": "ISC",
-  "main": "dist/Enumerable.js",
+  "typings": "dist/src/Enumerable.d.ts",
+  "bugs": {
+    "url": "https://github.com/rjrudman/TSLinq/issues"
+  },
+  "main": "dist/src/Enumerable.js",
   "devDependencies": {
     "jasmine-core": "^2.6.1",
     "tslint": "^5.1.0"

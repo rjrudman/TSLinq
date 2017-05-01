@@ -656,7 +656,7 @@ export class Enumerable<T> implements Iterable<T> {
     }
 }
 
-interface OrderInformation<T> {
+export interface OrderInformation<T> {
     Selector: (item: T) => any;
     Direction: 'ASC' | 'DESC'
 }
