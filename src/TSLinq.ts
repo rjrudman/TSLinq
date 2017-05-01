@@ -1,5 +1,19 @@
-import * as ObjectId from './ObjectId.js';
-const getObjectId: ((obj: any) => number) = ObjectId.getObjectIdFunc();
+// Thanks to http://stackoverflow.com/a/1997811/563532
+function getObjectIdFunc() {
+    let id = 0;
+    return function (o: any) {
+        if (typeof o.__uniqueid === 'undefined') {
+            Object.defineProperty(o, '__uniqueid', {
+                value: ++id,
+                enumerable: false,
+                writable: false
+            });
+        }
+
+        return o.__uniqueid;
+    };
+};
+const getObjectId: ((obj: any) => number) = getObjectIdFunc();
 
 function isIterator<T>(obj: any): obj is Iterator<T> {
     const it = <Iterator<T>>obj;

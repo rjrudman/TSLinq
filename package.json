@@ -9,7 +9,7 @@
     "build": "tsc -d",
     "start": "tsc -w",
     "test": "jasmine",
-    "buildprod": " tsc src/TSLinq.ts -d --lib es2015 --outDir dist"
+    "buildprod": "tsc src/TSLinq.ts -d --lib es2015 --target ES5 --outDir dist"
   },
   "keywords": [
     "linq",
