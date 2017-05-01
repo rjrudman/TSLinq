@@ -338,6 +338,30 @@ export class Enumerable<T> implements Iterable<T> {
         }
     }
 
+    public Max(): number {
+        throw new Error('Not implemented');
+    }
+
+    public Min(): number {
+        throw new Error('Not implemented');
+    }
+
+    public OrderBy<TReturnType>(selector: (item: T) => TReturnType): Enumerable<T> {
+        throw new Error('Not implemented');
+    }
+
+    public OrderByDescending<TReturnType>(selector: (item: T) => TReturnType): Enumerable<T> {
+        throw new Error('Not implemented');
+    }
+
+    public ThenBy<TReturnType>(selector: (item: T) => TReturnType): Enumerable<T> {
+        throw new Error('Not implemented');
+    }
+
+    public ThenByDescending<TReturnType>(selector: (item: T) => TReturnType): Enumerable<T> {
+        throw new Error('Not implemented');
+    }
+
     public Reverse(): Enumerable<T> {
         let src = this.ToArray();
         let pointer = src.length - 1;
