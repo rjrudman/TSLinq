@@ -338,12 +338,54 @@ export class Enumerable<T> implements Iterable<T> {
         }
     }
 
-    public Max(): number {
-        throw new Error('Not implemented');
+    public Max(): number;
+    public Max(selector: (item: T) => number): number;
+    public Max(selector?: (item: T) => number) {
+        if (!selector) {
+            selector = item => <number><any>item;
+        }
+
+        const enumerable = this.Select<number>(selector);
+        let currentMax: number | undefined;
+        enumerable.ForEach(i => {
+            if (typeof (i) === 'number') {
+                if (!currentMax || i > currentMax) {
+                    currentMax = i;
+                }
+            } else {
+                throw new Error('Max() is only valid on Enumerable<number>');
+            }
+        });
+        if (currentMax === undefined) {
+            throw new Error('Sequence contains no elements');
+        }
+
+        return currentMax;
     }
 
-    public Min(): number {
-        throw new Error('Not implemented');
+    public Min(): number;
+    public Min(selector: (item: T) => number): number;
+    public Min(selector?: (item: T) => number) {
+        if (!selector) {
+            selector = item => <number><any>item;
+        }
+
+        const enumerable = this.Select<number>(selector);
+        let currentMin: number | undefined;
+        enumerable.ForEach(i => {
+            if (typeof (i) === 'number') {
+                if (!currentMin || i < currentMin) {
+                    currentMin = i;
+                }
+            } else {
+                throw new Error('Min() is only valid on Enumerable<number>');
+            }
+        });
+        if (currentMin === undefined) {
+            throw new Error('Sequence contains no elements');
+        }
+
+        return currentMin;
     }
 
     public OrderBy<TReturnType>(selector: (item: T) => TReturnType): Enumerable<T> {
