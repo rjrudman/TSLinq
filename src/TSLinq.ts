@@ -650,26 +650,14 @@ export class Enumerable<T> implements Iterable<T> {
      * @param predicate The predicate to be invoked on each element.
      */
     public SkipWhile(predicate: (item: T) => boolean): Enumerable<T> {
-        let skipped = false;
-        const newIterator = Enumerable.makeIterator<T, T>(this.iteratorGetter(), function (sourceIterator) {
-            let currentItem = sourceIterator.next();
-            if (!skipped) {
-                if (currentItem.done) {
-                    return { done: true, value: <any>null };
-                }
-
-                while (predicate(currentItem.value)) {
-                    currentItem = sourceIterator.next();
-                    if (currentItem.done) {
-                        return { done: true, value: <any>null };
-                    }
-                }
-                skipped = true;
+        let skipping = true;
+        return this.SelectMany(a => {
+            skipping = skipping && predicate(a);
+            if (!skipping) {
+                return Enumerable.Of([a]);
             }
-            return currentItem;
+            return Enumerable.Of([]);
         });
-
-        return Enumerable.Of(newIterator);
     }
 
     /**
