@@ -3,6 +3,7 @@
 [![Build Status](https://travis-ci.org/rjrudman/TSLinq.svg?branch=master)](https://travis-ci.org/rjrudman/TSLinq)
 [![dependencies Status](https://david-dm.org/rjrudman/tslinq/status.svg)](https://david-dm.org/rjrudman/tslinq)
 [![devDependencies Status](https://david-dm.org/rjrudman/tslinq/dev-status.svg)](https://david-dm.org/rjrudman/tslinq?type=dev)
+[![Downloads](https://img.shields.io/npm/dm/tslinq.svg)](https://npmjs.com/packages/tslinq)
 
 ## Details
 TSLinq is a port of [.NET's LINQ library](https://msdn.microsoft.com/en-us/library/bb308959.aspx) which tries to be as true to the original as possible. 
