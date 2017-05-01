@@ -349,25 +349,12 @@ export class Enumerable<T> implements Iterable<T> {
         innerKeySelector: ((item: TInner) => TKey),
         resultSelector: ((originalRow: T, innerRows: Enumerable<TInner>) => TResult)): Enumerable<TResult> {
 
-        const newIterator = Enumerable.makeIterator<T, TResult>(this.iteratorGetter(), function (sourceIterator) {
-            const nextItem = sourceIterator.next();
-            if (!nextItem.done) {
-                const outerKey = outerKeySelector(nextItem.value);
-                const innerRows = inner.Where(i => innerKeySelector(i) === outerKey);
-                const result = resultSelector(nextItem.value, innerRows);
-
-                return {
-                    done: false,
-                    value: result
-                }
-            }
-            return {
-                done: true,
-                value: <any>null
-            }
+        return this.Select(a => {
+            const outerKey = outerKeySelector(a);
+            const innerRows = inner.Where(i => innerKeySelector(i) === outerKey);
+            const result = resultSelector(a, innerRows);
+            return result;
         });
-
-        return Enumerable.Of(newIterator);
     }
 
     /**
