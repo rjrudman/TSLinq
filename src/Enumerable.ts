@@ -513,6 +513,19 @@ export class Enumerable<T> implements Iterable<T> {
         return items;
     }
 
+    public ToDictionary<TValue>(keySelector: (item: T) => string, valueSelector?: (item: T) => TValue): any {
+        let returnObject: any = {};
+        this.GroupBy(g => keySelector(g))
+            .ForEach(item => {
+                let transformedValues: any = item.Values;
+                if (valueSelector) {
+                    transformedValues = transformedValues.Select(valueSelector);
+                }
+                returnObject[item.Key] = transformedValues;
+            });
+        return returnObject;
+    }
+
     public Union(inner: Enumerable<T>): Enumerable<T> {
         return this.Concat(inner).Distinct();
     }
