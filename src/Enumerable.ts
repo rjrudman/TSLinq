@@ -425,17 +425,28 @@ export class Enumerable<T> implements Iterable<T> {
         if (num < 0) {
             num = 0;
         }
+        let i = 0;
+        return this.SkipWhile(item => i++ < num);
+    }
+
+    public SkipWhile(predicate: (item: T) => boolean): Enumerable<T> {
         let skipped = false;
         const newIterator = Enumerable.makeIterator<T, T>(this.iteratorGetter(), function (sourceIterator) {
+            let currentItem = sourceIterator.next();
             if (!skipped) {
-                let i = 0;
-                while (i < num) {
-                    sourceIterator.next();
-                    i++;
+                if (currentItem.done) {
+                    return { done: true, value: <any>null };
+                }
+
+                while (predicate(currentItem.value)) {
+                    currentItem = sourceIterator.next();
+                    if (currentItem.done) {
+                        return { done: true, value: <any>null };
+                    }
                 }
                 skipped = true;
             }
-            return <IteratorResult<T>>sourceIterator.next()
+            return currentItem;
         });
 
         return Enumerable.Of(newIterator);
