@@ -473,6 +473,9 @@ export class Enumerable<T> implements Iterable<T> {
     }
 
     public Take(num: number): Enumerable<T> {
+        if (num < 0) {
+            num = 0;
+        }
         let numTaken = 0;
         const newIterator = Enumerable.makeIterator<T, T>(this.iteratorGetter(), function (sourceIterator) {
             if (numTaken >= num) {
@@ -480,6 +483,19 @@ export class Enumerable<T> implements Iterable<T> {
             } else {
                 numTaken++;
                 return sourceIterator.next();
+            }
+        });
+
+        return Enumerable.Of(newIterator);
+    }
+
+    public TakeWhile(predicate: (item: T) => boolean): Enumerable<T> {
+        const newIterator = Enumerable.makeIterator<T, T>(this.iteratorGetter(), function (sourceIterator) {
+            let currentItem = sourceIterator.next();
+            if (currentItem.done || predicate(currentItem.value)) {
+                return currentItem;
+            } else {
+                return { done: true, value: <any>null };
             }
         });
 
