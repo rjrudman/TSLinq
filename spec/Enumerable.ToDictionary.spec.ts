@@ -5,51 +5,33 @@ describe('Enumerable', () => {
         it('Should return a dictionary based on the key selector', () => {
             const source = [
                 { Boss: 'Rob', Name: 'Tim' },
-                { Boss: 'Rob', Name: 'John' },
                 { Boss: 'Mike', Name: 'Anne' },
-                { Boss: 'Jessica', Name: 'Matt' },
-                { Boss: 'Jessica', Name: 'Tom' },
+                { Boss: 'Jessica', Name: 'Matt' }
             ]
 
             const result =
                 Enumerable.Of(source)
                     .ToDictionary(a => a.Boss);
 
-            expect(result['Rob'].ToArray()).toEqual(
-                [
-                    { Boss: 'Rob', Name: 'Tim' },
-                    { Boss: 'Rob', Name: 'John' }
-                ]
-            );
-            expect(result['Mike'].ToArray()).toEqual(
-                [
-                    { Boss: 'Mike', Name: 'Anne' }
-                ]
-            );
-            expect(result['Jessica'].ToArray()).toEqual(
-                [
-                    { Boss: 'Jessica', Name: 'Matt' },
-                    { Boss: 'Jessica', Name: 'Tom' }
-                ]
-            );
+            expect(result.Get('Rob')).toEqual({ Boss: 'Rob', Name: 'Tim' });
+            expect(result.Get('Mike')).toEqual({ Boss: 'Mike', Name: 'Anne' });
+            expect(result.Get('Jessica')).toEqual({ Boss: 'Jessica', Name: 'Matt' });
         });
 
         it('Should return a dictionary based on the key selector with values according to the value selector', () => {
             const source = [
                 { Boss: 'Rob', Name: 'Tim' },
-                { Boss: 'Rob', Name: 'John' },
                 { Boss: 'Mike', Name: 'Anne' },
-                { Boss: 'Jessica', Name: 'Matt' },
-                { Boss: 'Jessica', Name: 'Tom' },
+                { Boss: 'Jessica', Name: 'Matt' }
             ]
 
             const result =
                 Enumerable.Of(source)
                     .ToDictionary(a => a.Boss, a => a.Name);
 
-            expect(result['Rob'].ToArray()).toEqual(['Tim', 'John']);
-            expect(result['Mike'].ToArray()).toEqual(['Anne']);
-            expect(result['Jessica'].ToArray()).toEqual(['Matt', 'Tom']);
+            expect(result.Get('Rob')).toEqual('Tim');
+            expect(result.Get('Mike')).toEqual('Anne');
+            expect(result.Get('Jessica')).toEqual('Matt');
         });
 
     });

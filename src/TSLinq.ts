@@ -1,3 +1,6 @@
+import * as ObjectId from './ObjectId.js';
+const getObjectId: ((obj: any) => number) = ObjectId.getObjectIdFunc();
+
 function isIterator<T>(obj: any): obj is Iterator<T> {
     const it = <Iterator<T>>obj;
     return it.next !== undefined;
@@ -618,21 +621,35 @@ export class Enumerable<T> implements Iterable<T> {
         return items;
     }
 
-    public ToDictionary<TValue>(keySelector: (item: T) => string, valueSelector?: (item: T) => TValue): any {
-        const returnObject: any = {};
-        this.GroupBy(g => keySelector(g))
-            .ForEach(item => {
-                let transformedValues: any = item.Values;
-                if (valueSelector) {
-                    transformedValues = transformedValues.Select(valueSelector);
-                }
-                returnObject[item.Key] = transformedValues;
+    public ToDictionary<TKey, TValue>(keySelector: (item: T) => TKey): Dictionary<TKey, T>;
+    public ToDictionary<TKey, TValue>(keySelector: (item: T) => TKey, valueSelector: (item: T) => TValue): Dictionary<TKey, TValue>;
+    public ToDictionary<TKey, TValue>(keySelector: (item: T) => TKey, valueSelector?: (item: T) => TValue): Dictionary<TKey, TValue> | Dictionary<TKey, T> {
+        if (valueSelector) {
+            const returnDictionary = new Dictionary<TKey, TValue>();
+            this.ForEach(item => {
+                const key = keySelector(item);
+                const value = valueSelector(item);
+                returnDictionary.Add(key, value);
             });
-        return returnObject;
+            return returnDictionary;
+        } else {
+            const returnDictionary = new Dictionary<TKey, T>();
+            this.ForEach(item => {
+                const key = keySelector(item);
+                const value = item;
+                returnDictionary.Add(key, value);
+            });
+            return returnDictionary;
+        }
     }
 
-    public ToLookup<TValue>(keySelector: (item: T) => string, valueSelector?: (item: T) => TValue): any {
-        return this.ToDictionary(keySelector, valueSelector);
+    public ToLookup<TKey, TValue>(keySelector: (item: T) => TKey): Lookup<TKey, T>;
+    public ToLookup<TKey, TValue>(keySelector: (item: T) => TKey, valueSelector: (item: T) => TValue): Lookup<TKey, TValue>;
+    public ToLookup<TKey, TValue>(keySelector: (item: T) => TKey, valueSelector?: (item: T) => TValue): Lookup<TKey, TValue> | Lookup<TKey, T> {
+        if (valueSelector) {
+            return <Lookup<TKey, TValue>>this.ToDictionary(keySelector, valueSelector);
+        }
+        return <Lookup<TKey, T>>this.ToDictionary(keySelector);
     }
 
     public Union(inner: Enumerable<T>): Enumerable<T> {
@@ -728,6 +745,88 @@ export class OrderedEnumerable<T> extends Enumerable<T> {
 
     public ThenByDescending<TReturnType>(selector: (item: T) => TReturnType): Enumerable<T> {
         return new OrderedEnumerable<T>(this.iteratorGetter, [...this.orders, { Selector: selector, Direction: 'DESC' }]);
+    }
+}
+
+export interface KeyValuePair<TKey, TValue> {
+    Key: TKey,
+    Value: TValue
+}
+
+export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>> implements Iterator<KeyValuePair<TKey, TValue>> {
+    private pointer = 0;
+    protected holder: any = {};
+    protected keys: TKey[] = []
+    protected values: TValue[] = [];
+
+    protected constructor() {
+        super(() => this);
+    }
+
+    protected getKey(key: TKey) {
+        if (typeof (key) === 'object') {
+            return getObjectId(key);
+        }
+        return JSON.stringify(key);
+    }
+
+    public Get(key: TKey): TValue {
+        const id = this.getKey(key);
+        const result = this.holder[id];
+        if (result === undefined) {
+            throw new Error('The given key was not present in the dictionary.')
+        }
+        return result;
+    }
+
+    public TryGetValue(key: TKey): TValue | undefined {
+        const id = this.getKey(key);
+        const result = this.holder[id];
+        return result;
+    }
+
+    next(value?: any): IteratorResult<KeyValuePair<TKey, TValue>> {
+        if (this.pointer >= this.keys.length - 1) {
+            return { done: true, value: <any>null };
+        }
+        const key = this.keys[this.pointer++];
+        return {
+            done: false, value: {
+                Key: key,
+                Value: this.Get(key)
+            }
+        };
+    }
+    reset(value?: any): IteratorResult<KeyValuePair<TKey, TValue>> {
+        this.pointer = 0;
+        return { done: true, value: <any>null };
+    }
+}
+
+export class Dictionary<TKey, TValue> extends Lookup<TKey, TValue> {
+    constructor() {
+        super();
+    }
+
+    public Add(key: TKey, value: TValue): void {
+        if (this.TryGetValue(key)) {
+            throw new Error('An item with the same key has already been added.');
+        }
+        const id = this.getKey(key);
+        this.holder[id] = value;
+    }
+
+    public AddOrReplace(key: TKey, value: TValue): void {
+        const id = this.getKey(key);
+        this.holder[id] = value;
+    }
+
+    public get Keys(): Enumerable<TKey> {
+        return Enumerable.Of(this.keys);
+    }
+
+    public get Values(): Enumerable<TValue> {
+        return Enumerable.Of(this.values);
     }
 }
 
