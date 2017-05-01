@@ -380,9 +380,45 @@ export class Enumerable<T> implements Iterable<T> {
     public SequenceEqual(inner: Enumerable<T>): boolean {
         if (this.Count() !== inner.Count())
             return false;
-            
+
         return this.Zip(inner, (left, right) => { return { left, right } })
-                   .All(item => item.left === item.right);
+            .All(item => item.left === item.right);
+    }
+
+    public Single(): T;
+    public Single(predicate: ((item: T) => boolean)): T;
+    public Single(predicate?: ((item: T) => boolean)): T {
+        if (predicate !== undefined) {
+            return this.Where(predicate).First();
+        }
+
+        let iterator = this.iteratorGetter();
+        const nextItem = iterator.next();
+        if (nextItem.done) {
+            throw new Error('Sequence contains no elements');
+        } else if (!iterator.next().done) {
+            throw new Error('Sequence contains more than one element');
+        } else {
+            return nextItem.value;
+        }
+    }
+
+    public SingleOrDefault(): T | null;
+    public SingleOrDefault(predicate: ((item: T) => boolean)): T | null;
+    public SingleOrDefault(predicate?: ((item: T) => boolean)): T | null {
+        if (predicate !== undefined) {
+            return this.Where(predicate).First();
+        }
+
+        let iterator = this.iteratorGetter();
+        const nextItem = iterator.next();
+        if (nextItem.done) {
+            return null;
+        } else if (!iterator.next().done) {
+            return null;
+        } else {
+            return nextItem.value;
+        }
     }
 
     public Skip(num: number): Enumerable<T> {
