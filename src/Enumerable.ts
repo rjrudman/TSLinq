@@ -272,6 +272,10 @@ export class Enumerable<T> implements Iterable<T> {
         return Enumerable.Of(newIterator);
     }
 
+    public Intersect(inner: Enumerable<T>): Enumerable<T> {
+        return this.Where(x => inner.Contains(x)).Distinct();
+    }
+
     public Join<TInner, TKey, TResult>(inner: Enumerable<TInner>,
         outerKeySelector: ((item: T) => TKey),
         innerKeySelector: ((item: TInner) => TKey),
@@ -289,7 +293,7 @@ export class Enumerable<T> implements Iterable<T> {
                             value: <any>null
                         };
                     }
-                    
+
                     currentRow = nextItem.value;
                     let outerKey = outerKeySelector(currentRow);
                     innerRowsIterator = inner.Where(i => innerKeySelector(i) === outerKey).iteratorGetter();
@@ -328,6 +332,35 @@ export class Enumerable<T> implements Iterable<T> {
                 done: false,
                 value: selector(nextItem.value)
             };
+        });
+        return Enumerable.Of<TReturnType>(newIterator);
+    }
+
+    public SelectMany<TReturnType>(selector: (item: T) => Enumerable<TReturnType>): Enumerable<TReturnType> {
+        let foreignRows = this.Select(selector);
+        let foreignRowIterator = foreignRows.iteratorGetter();
+        let currentRowIterator: Iterator<TReturnType> | undefined;
+        const newIterator = Enumerable.makeIterator<T, TReturnType>(this.iteratorGetter(), function (sourceIterator) {
+            while (true) {
+                if (currentRowIterator) {
+                    let nextRow = currentRowIterator.next();
+                    if (!nextRow.done) {
+                        return {
+                            done: false,
+                            value: nextRow.value
+                        }
+                    }
+                }
+
+                let nextSet = foreignRowIterator.next();
+                if (nextSet.done) {
+                    return {
+                        done: true,
+                        value: <any>null
+                    }
+                }
+                currentRowIterator = nextSet.value.iteratorGetter();
+            }
         });
         return Enumerable.Of<TReturnType>(newIterator);
     }
