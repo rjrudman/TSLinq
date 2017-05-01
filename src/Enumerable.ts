@@ -9,7 +9,7 @@ export interface Grouping<T, TValue> {
 }
 
 export class Enumerable<T> implements Iterable<T> {
-    private iteratorGetter: () => Iterator<T>;
+    protected iteratorGetter: () => Iterator<T>;
 
     public static Of<T>(source: T[] | Iterator<T>): Enumerable<T> {
         if (isIterator(source)) {
@@ -18,7 +18,7 @@ export class Enumerable<T> implements Iterable<T> {
         return new Enumerable<T>(() => new EmptyIterator<T>(source));
     }
 
-    private static makeIterator<T, TReturnIteratorType>(sourceIterator: Iterator<T>, next: ((sourceIterator: Iterator<T>) => IteratorResult<TReturnIteratorType>)) {
+    protected static makeIterator<T, TReturnIteratorType>(sourceIterator: Iterator<T>, next: ((sourceIterator: Iterator<T>) => IteratorResult<TReturnIteratorType>)) {
         const iterator: Iterator<TReturnIteratorType> = {
             next: function () {
                 return next(sourceIterator);
@@ -388,20 +388,12 @@ export class Enumerable<T> implements Iterable<T> {
         return currentMin;
     }
 
-    public OrderBy<TReturnType>(selector: (item: T) => TReturnType): Enumerable<T> {
-        return Enumerable.Of(this.ToArray().sort((left, right) => <any>selector(left) - <any>selector(right)));
+    public OrderBy(selector: (item: T) => any): OrderedEnumerable<T> {
+        return new OrderedEnumerable<T>(this.iteratorGetter, [{ Selector: selector, Direction: 'ASC' }]);
     }
 
-    public OrderByDescending<TReturnType>(selector: (item: T) => TReturnType): Enumerable<T> {
-        return Enumerable.Of(this.ToArray().sort((left, right) => <any>selector(right) - <any>selector(left)));
-    }
-
-    public ThenBy<TReturnType>(selector: (item: T) => TReturnType): Enumerable<T> {
-        throw new Error('Not implemented');
-    }
-
-    public ThenByDescending<TReturnType>(selector: (item: T) => TReturnType): Enumerable<T> {
-        throw new Error('Not implemented');
+    public OrderByDescending<TReturnType>(selector: (item: T) => TReturnType): OrderedEnumerable<T> {
+        return new OrderedEnumerable<T>(this.iteratorGetter, [{ Selector: selector, Direction: 'DESC' }]);
     }
 
     public Reverse(): Enumerable<T> {
@@ -656,6 +648,59 @@ export class Enumerable<T> implements Iterable<T> {
             return { done: false, value: result };
         });
         return Enumerable.Of(newIterator);
+    }
+}
+
+interface OrderInformation<T> {
+    Selector: (item: T) => any;
+    Direction: 'ASC' | 'DESC'
+}
+
+export class OrderedEnumerable<T> extends Enumerable<T> {
+    private orders: OrderInformation<T>[]
+    public constructor(iteratorGetter: () => Iterator<T>, orders: OrderInformation<T>[]) {
+        super(iteratorGetter);
+        this.orders = orders;
+
+        let currentSrc = new Enumerable<T>(iteratorGetter);
+        let pointer = 0;
+        let srcArray: T[] | undefined;
+        this.iteratorGetter = () => {
+            return {
+                next: function () {
+                    if (!srcArray) {
+                        srcArray = currentSrc.ToArray().sort((left: T, right: T) => {
+                            let currentResult = 0;
+                            for (let i = 0; i < orders.length; i++) {
+                                let order = orders[i];
+                                let orderSelector = order.Selector;
+                                if (currentResult === 0) {
+                                    if (order.Direction === 'ASC') {
+                                        currentResult = orderSelector(left) - orderSelector(right);
+                                    } else {
+                                        currentResult = orderSelector(right) - orderSelector(left);
+                                    }
+                                }
+                            }
+                            return currentResult;
+                        });
+                    }
+
+                    if (pointer >= srcArray.length) {
+                        return { done: true, value: <T><any>null };
+                    }
+                    return { done: false, value: <T>srcArray[pointer++] };
+                }
+            }
+        };
+    }
+
+    public ThenBy<TReturnType>(selector: (item: T) => TReturnType): Enumerable<T> {
+        return new OrderedEnumerable<T>(this.iteratorGetter, [...this.orders, { Selector: selector, Direction: 'ASC' }]);
+    }
+
+    public ThenByDescending<TReturnType>(selector: (item: T) => TReturnType): Enumerable<T> {
+        return new OrderedEnumerable<T>(this.iteratorGetter, [...this.orders, { Selector: selector, Direction: 'DESC' }]);
     }
 }
 
