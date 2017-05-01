@@ -526,6 +526,10 @@ export class Enumerable<T> implements Iterable<T> {
         return returnObject;
     }
 
+    public ToLookup<TValue>(keySelector: (item: T) => string, valueSelector?: (item: T) => TValue): any {
+        return this.ToDictionary(keySelector, valueSelector);
+    }
+    
     public Union(inner: Enumerable<T>): Enumerable<T> {
         return this.Concat(inner).Distinct();
     }
