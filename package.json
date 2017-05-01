@@ -10,7 +10,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "jasmine-core": "^2.6.1"
+    "jasmine-core": "^2.6.1",
+    "tslint": "^5.1.0"
   },
   "dependencies": {
     "typescript": "^2.3.2",
