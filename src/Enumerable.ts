@@ -90,6 +90,10 @@ export class Enumerable<T> implements Iterable<T> {
         return num / count;
     }
 
+    public Cast<TReturnType>(): Enumerable<TReturnType> {
+        return <Enumerable<TReturnType>><any>this;
+    }
+
     public Concat(second: Enumerable<T>): Enumerable<T> {
         const secondIterator = second.iteratorGetter();
         const newIterator = Enumerable.makeIterator<T, T>(this.iteratorGetter(), function (sourceIterator) {
