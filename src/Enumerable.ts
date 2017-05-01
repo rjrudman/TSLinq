@@ -389,11 +389,11 @@ export class Enumerable<T> implements Iterable<T> {
     }
 
     public OrderBy<TReturnType>(selector: (item: T) => TReturnType): Enumerable<T> {
-        throw new Error('Not implemented');
+        return Enumerable.Of(this.ToArray().sort((left, right) => <any>selector(left) - <any>selector(right)));
     }
 
     public OrderByDescending<TReturnType>(selector: (item: T) => TReturnType): Enumerable<T> {
-        throw new Error('Not implemented');
+        return Enumerable.Of(this.ToArray().sort((left, right) => <any>selector(right) - <any>selector(left)));
     }
 
     public ThenBy<TReturnType>(selector: (item: T) => TReturnType): Enumerable<T> {
