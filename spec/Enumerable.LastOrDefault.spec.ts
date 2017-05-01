@@ -1,7 +1,7 @@
 import { Enumerable } from '../src/Enumerable';
 
 describe('Enumerable', () => {
-    describe('FirstOrDefault', () => {
+    describe('LastOrDefault', () => {
         it('Should not throw an error for no items', () => {
             const source = [1, 3];
 
@@ -10,7 +10,7 @@ describe('Enumerable', () => {
             const result =
                 Enumerable.Of(source)
                     .Where((s: number) => s % 2 === 0)
-                    .FirstOrDefault();
+                    .LastOrDefault();
 
             expect(result).toEqual(expected);
         });
@@ -18,11 +18,11 @@ describe('Enumerable', () => {
         it('Should return the first item if there\'s no predicate', () => {
             const source = [1, 3];
 
-            const expected = 1;
+            const expected = 3;
 
             const result =
                 Enumerable.Of(source)
-                    .FirstOrDefault();
+                    .LastOrDefault();
 
             expect(result).toEqual(expected);
         });
@@ -34,7 +34,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .FirstOrDefault(i => i > 2);
+                    .LastOrDefault(i => i < 4);
 
             expect(result).toEqual(expected);
         });

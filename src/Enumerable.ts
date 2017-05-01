@@ -90,6 +90,24 @@ export class Enumerable<T> implements Iterable<T> {
         return num / count;
     }
 
+    public Concat(second: Enumerable<T>): Enumerable<T> {
+        const secondIterator = second.iteratorGetter();
+        const newIterator = Enumerable.makeIterator<T, T>(this.iteratorGetter(), function (sourceIterator) {
+            let nextItem = sourceIterator.next();
+            if (!nextItem.done) {
+                return nextItem;
+            } else {
+                nextItem = secondIterator.next();
+            }
+            return nextItem;
+        });
+        return Enumerable.Of(newIterator);
+    };
+
+    public Contains(item: T): boolean {
+        return this.Any(a => a === item);
+    };
+
     public Count(): number;
     public Count(predicate: ((item: T) => boolean)): number;
     public Count(predicate?: (item: T) => boolean) {
@@ -111,24 +129,6 @@ export class Enumerable<T> implements Iterable<T> {
         }
         return Enumerable.Of<T>([defaultValue]);
     }
-
-    public Concat(second: Enumerable<T>): Enumerable<T> {
-        const secondIterator = second.iteratorGetter();
-        const newIterator = Enumerable.makeIterator<T, T>(this.iteratorGetter(), function (sourceIterator) {
-            let nextItem = sourceIterator.next();
-            if (!nextItem.done) {
-                return nextItem;
-            } else {
-                nextItem = secondIterator.next();
-            }
-            return nextItem;
-        });
-        return Enumerable.Of(newIterator);
-    };
-
-    public Contains(item: T): boolean {
-        return this.Any(a => a === item);
-    };
 
     public Distinct(): Enumerable<T> {
         return this.DistinctBy(a => a);
@@ -191,7 +191,7 @@ export class Enumerable<T> implements Iterable<T> {
         }
         const nextItem = this.iteratorGetter().next();
         if (nextItem.done) {
-            throw new Error('Sequence contains no items');
+            throw new Error('Sequence contains no elements');
         } else {
             return nextItem.value;
         }
@@ -316,6 +316,26 @@ export class Enumerable<T> implements Iterable<T> {
         });
 
         return Enumerable.Of(newIterator);
+    }
+
+    public Last(): T;
+    public Last(predicate: ((item: T) => boolean)): T;
+    public Last(predicate?: ((item: T) => boolean)): T {
+        if (predicate) {
+            return this.Reverse().First(predicate);
+        } else {
+            return this.Reverse().First();
+        }
+    }
+
+    public LastOrDefault(): T | null;
+    public LastOrDefault(predicate: ((item: T) => boolean)): T | null;
+    public LastOrDefault(predicate?: ((item: T) => boolean)): T | null {
+        if (predicate) {
+            return this.Reverse().FirstOrDefault(predicate);
+        } else {
+            return this.Reverse().FirstOrDefault();
+        }
     }
 
     public Reverse(): Enumerable<T> {
@@ -529,7 +549,7 @@ export class Enumerable<T> implements Iterable<T> {
     public ToLookup<TValue>(keySelector: (item: T) => string, valueSelector?: (item: T) => TValue): any {
         return this.ToDictionary(keySelector, valueSelector);
     }
-    
+
     public Union(inner: Enumerable<T>): Enumerable<T> {
         return this.Concat(inner).Distinct();
     }

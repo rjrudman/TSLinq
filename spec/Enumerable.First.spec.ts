@@ -1,18 +1,18 @@
 import { Enumerable } from '../src/Enumerable';
 
 describe('Enumerable', () => {
-    describe('FirstOrDefault', () => {
-        it('Should not throw an error for no items', () => {
+    describe('First', () => {
+        it('Should throw an error for no items', () => {
             const source = [1, 3];
 
             const expected = null;
 
-            const result =
-                Enumerable.Of(source)
-                    .Where((s: number) => s % 2 === 0)
-                    .FirstOrDefault();
-
-            expect(result).toEqual(expected);
+            expect(() => {
+                const result =
+                    Enumerable.Of(source)
+                        .Where((s: number) => s % 2 === 0)
+                        .First();
+            }).toThrow(new Error('Sequence contains no elements'));
         });
 
         it('Should return the first item if there\'s no predicate', () => {
@@ -22,7 +22,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .FirstOrDefault();
+                    .First();
 
             expect(result).toEqual(expected);
         });
@@ -34,7 +34,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .FirstOrDefault(i => i > 2);
+                    .First(i => i > 2);
 
             expect(result).toEqual(expected);
         });
