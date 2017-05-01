@@ -7,7 +7,7 @@
 [![Downloads](https://img.shields.io/npm/dm/tslinq.svg)](https://npmjs.com/packages/tslinq)
 
 ## Details
-TSLinq is a port of [.NET's LINQ library](https://msdn.microsoft.com/en-us/library/bb308959.aspx) which tries to be as true to the original as possible. 
+TSLinq is an ES5 compatible port of [.NET's LINQ library](https://msdn.microsoft.com/en-us/library/bb308959.aspx) which tries to be as true to the original as possible. 
 
 TSLinq utilises lazily evaluated `Enumerable<T>`'s, rather than eager evaluation found in other libraries. In addition, it supports [ES6 generators](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/function*) allowing for powerful data manipulation.
 
