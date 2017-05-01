@@ -89,11 +89,22 @@ export class Enumerable<T> implements Iterable<T> {
         }
     }
 
+    /**
+     * Returns whether every element in the sequence satisfies the supplied predicate
+     * @param predicate The predicate to be invoked on each element
+     */
     public All(predicate: (item: T) => boolean) {
         return !this.Any(i => !predicate(i));
     }
 
+    /**
+     * Returns whether the sequence contains any elements
+     */
     public Any(): boolean;
+    /**
+     * Returns whether the sequence contains any elements which satisfy the supplied predicate
+     * @param predicate The predicate to be invoked on each element
+     */
     public Any(predicate: ((item: T) => boolean)): boolean;
     public Any(predicate?: (item: T) => boolean) {
         let enumerable = <Enumerable<T>>this;
@@ -103,7 +114,14 @@ export class Enumerable<T> implements Iterable<T> {
         return !enumerable.iteratorGetter().next().done;
     }
 
+    /**
+     * Returns the average of the elements in the sequence. Only supports Enumerable<number>
+     */
     public Average(): number;
+    /**
+     * Invokes the selector on each element in the sequence and returns the average
+     * @param selector The selector to be invoked on each element
+     */
     public Average(selector: (item: T) => number): number;
     public Average(selector?: (item: T) => number) {
         if (!selector) {
@@ -129,10 +147,17 @@ export class Enumerable<T> implements Iterable<T> {
         return num / count;
     }
 
+    /**
+     * Casts the sequence from Enumerable<T> to Enumerable<TReturnType>
+     */
     public Cast<TReturnType>(): Enumerable<TReturnType> {
         return <Enumerable<TReturnType>><any>this;
     }
 
+    /**
+     * Concatenates the current sequence with the supplied sequence
+     * @param second The sequence to concatenate
+     */
     public Concat(second: Enumerable<T>): Enumerable<T> {
         const secondIterator = second.iteratorGetter();
         const newIterator = Enumerable.makeIterator<T, T>(this.iteratorGetter(), function (sourceIterator) {
@@ -147,11 +172,22 @@ export class Enumerable<T> implements Iterable<T> {
         return Enumerable.Of(newIterator);
     };
 
-    public Contains(item: T): boolean {
-        return this.Any(a => a === item);
+    /**
+     * Returns whether or not the sequence contains the specified element
+     * @param item The element to search for
+     */
+    public Contains(element: T): boolean {
+        return this.Any(a => a === element);
     };
 
+    /**
+     * Returns the number of elements in the sequence
+     */
     public Count(): number;
+    /**
+     * Returns the number of elements in the sequence which satisfy the predicate
+     * @param predicate The predicate to be invoked on each element
+     */
     public Count(predicate: ((item: T) => boolean)): number;
     public Count(predicate?: (item: T) => boolean) {
         let enumerable = <Enumerable<T>>this;
@@ -166,6 +202,10 @@ export class Enumerable<T> implements Iterable<T> {
         return i;
     }
 
+    /**
+     * If the sequence contains no elements, returns a sequence containing only the supplied default value. Otherwise, returns itself.
+     * @param defaultValue The default value to be added if the sequence is empty.
+     */
     public DefaultIfEmpty(defaultValue: T): Enumerable<T> {
         if (this.Any()) {
             return this;
@@ -173,28 +213,17 @@ export class Enumerable<T> implements Iterable<T> {
         return Enumerable.Of<T>([defaultValue]);
     }
 
+    /**
+     * Returns the distinct items in the sequence
+     */
     public Distinct(): Enumerable<T> {
-        return this.DistinctBy(a => a);
+        return this.GroupBy(a => a).Select(g => g.Key);
     }
 
-    public DistinctBy<TValue>(selector: (item: T) => TValue): Enumerable<T> {
-        const dictionary = new Dictionary<TValue, null>();
-        const newIterator = Enumerable.makeIterator<T, T>(this.iteratorGetter(), function (sourceIterator) {
-            let nextItem = sourceIterator.next();
-            while (!nextItem.done) {
-                const key = selector(nextItem.value);
-                if (!dictionary.ContainsKey(key)) {
-                    dictionary.Add(key, null);
-                    return nextItem;
-                }
-                nextItem = sourceIterator.next();
-            }
-            return nextItem;
-        });
-
-        return Enumerable.Of(newIterator);
-    }
-
+    /**
+     * Returns the element at the specified position in the sequence. If the index is out of range, an error is thrown.
+     * @param index The index of the element to be retrieved
+     */
     public ElementAt(index: number): T {
         if (index < 0) {
             throw new Error('Index was out of range. Must be non-negative and less than the size of the collection');
@@ -208,6 +237,10 @@ export class Enumerable<T> implements Iterable<T> {
         }
     }
 
+    /**
+     * Returns the element at the specified position in the sequence. If the index is out of range, null is returned.
+     * @param index The index of the element to be retrieved
+     */
     public ElementAtOrDefault(index: number): T | null {
         if (index < 0) {
             return null;
@@ -221,12 +254,23 @@ export class Enumerable<T> implements Iterable<T> {
         }
     }
 
+    /**
+     * Returns the distinct elements in the sequence which are not found in the provided sequence
+     * @param other The sequence containing elements to be excluded
+     */
     public Except(other: Enumerable<T>): Enumerable<T> {
         const otherArray = other.ToArray();
         return this.Distinct().Where(a => otherArray.indexOf(a) === -1);
     }
 
+    /**
+     * Returns the first element of the sequence. If the sequence is empty, an error is thrown.
+     */
     public First(): T;
+    /**
+     * Returns the first element of the sequence which matches the supplied predicate. If no element is valid, or if the sequence is empty, an error is thrown.
+     * @param predicate The predicate to be invoked on each element
+     */
     public First(predicate: ((item: T) => boolean)): T;
     public First(predicate?: ((item: T) => boolean)): T {
         if (predicate !== undefined) {
@@ -240,7 +284,14 @@ export class Enumerable<T> implements Iterable<T> {
         }
     }
 
+    /**
+     * Returns the first element of the sequence. If the sequence is empty, null is returned.
+     */
     public FirstOrDefault(): T | null;
+    /**
+     * Returns the first element of the sequence which matches the supplied predicate. If no element is valid, or if the sequence is empty, null is returned.
+     * @param predicate The predicate to be invoked on each element
+     */
     public FirstOrDefault(predicate: ((item: T) => boolean)): T | null;
     public FirstOrDefault(predicate?: ((item: T) => boolean)): T | null {
         if (predicate !== undefined) {
@@ -254,6 +305,10 @@ export class Enumerable<T> implements Iterable<T> {
         }
     }
 
+    /**
+     * Iterates the sequence and invokes the provided function on each element.
+     * @param func The function to be invoked on each element
+     */
     public ForEach(func: ((item: T) => void)): void {
         const iterator = this.iteratorGetter();
         let item = iterator.next();
@@ -263,6 +318,10 @@ export class Enumerable<T> implements Iterable<T> {
         }
     }
 
+    /**
+     * Groups elements in the sequence by the supplied key selector. This method is not lazily executed.
+     * @param selector A selector which returns the key for the sequence to be grouped by
+     */
     public GroupBy<TValue>(selector: (item: T) => TValue): Enumerable<Grouping<TValue, T>> {
         const dictionary = new Dictionary<TValue, T[]>();
         this.ForEach(i => {
@@ -280,6 +339,14 @@ export class Enumerable<T> implements Iterable<T> {
         })
     }
 
+    /**
+     * Performs a left join of the sequences. Child rows are found as an Enumerable<TInner> on the result.
+     * If no children are found, the array will be empty.
+     * @param inner The second sequence
+     * @param outerKeySelector Key selector for the outer sequence
+     * @param innerKeySelector Key selector for the inner sequence
+     * @param resultSelector Selector to transform the result
+     */
     public GroupJoin<TInner, TKey, TResult>(inner: Enumerable<TInner>,
         outerKeySelector: ((item: T) => TKey),
         innerKeySelector: ((item: TInner) => TKey),
@@ -306,10 +373,21 @@ export class Enumerable<T> implements Iterable<T> {
         return Enumerable.Of(newIterator);
     }
 
+    /**
+     * Returns distinct elements which are present in both sequences
+     * @param inner The second sequence
+     */
     public Intersect(inner: Enumerable<T>): Enumerable<T> {
         return this.Where(x => inner.Contains(x)).Distinct();
     }
 
+    /**
+     * Performs an inner join between the two sequences
+     * @param inner The second sequence
+     * @param outerKeySelector Key selector for the outer sequence
+     * @param innerKeySelector Key selector for the inner sequence
+     * @param resultSelector Selector to transform the result
+     */
     public Join<TInner, TKey, TResult>(inner: Enumerable<TInner>,
         outerKeySelector: ((item: T) => TKey),
         innerKeySelector: ((item: TInner) => TKey),
@@ -352,7 +430,14 @@ export class Enumerable<T> implements Iterable<T> {
         return Enumerable.Of(newIterator);
     }
 
+    /**
+     * Returns the last element in the sequence. If the sequence is empty, an error is thrown.
+     */
     public Last(): T;
+    /**
+     * Returns the last element in the sequence which matches the predicate. If no elements are valid, or the sequence is empty, an error is thrown.
+     * @param predicate The predicate to be invoked on each element
+     */
     public Last(predicate: ((item: T) => boolean)): T;
     public Last(predicate?: ((item: T) => boolean)): T {
         if (predicate) {
@@ -362,7 +447,14 @@ export class Enumerable<T> implements Iterable<T> {
         }
     }
 
+    /**
+     * Returns the last element in the sequence. If the sequence is empty, null is returned.
+     */
     public LastOrDefault(): T | null;
+    /**
+     * Returns the last element in the sequence which matches the predicate. If no elements are valid, or the sequence is empty, null is returned.
+     * @param predicate The predicate to be invoked on each element
+     */
     public LastOrDefault(predicate: ((item: T) => boolean)): T | null;
     public LastOrDefault(predicate?: ((item: T) => boolean)): T | null {
         if (predicate) {
@@ -372,7 +464,14 @@ export class Enumerable<T> implements Iterable<T> {
         }
     }
 
+    /**
+     * Returns the max value of the sequence. Only supported on Enumerable<number>
+     */
     public Max(): number;
+    /**
+     * Returns the max value of each element's result of the selector.
+     * @param selector A selector to return the value to be compared
+     */
     public Max(selector: (item: T) => number): number;
     public Max(selector?: (item: T) => number) {
         if (!selector) {
@@ -397,7 +496,14 @@ export class Enumerable<T> implements Iterable<T> {
         return currentMax;
     }
 
+    /**
+     * Returns the min value of the sequence. Only supported on Enumerable<number>
+     */
     public Min(): number;
+    /**
+     * Returns the min value of each element's result of the selector.
+     * @param selector A selector to return the value to be compared
+     */
     public Min(selector: (item: T) => number): number;
     public Min(selector?: (item: T) => number) {
         if (!selector) {
@@ -422,14 +528,25 @@ export class Enumerable<T> implements Iterable<T> {
         return currentMin;
     }
 
+    /**
+     * Orders the sequence by the result of the selector in ascending order
+     * @param selector The selector to be invoked on each element
+     */
     public OrderBy(selector: (item: T) => any): OrderedEnumerable<T> {
         return new OrderedEnumerable<T>(this.iteratorGetter, [{ Selector: selector, Direction: 'ASC' }]);
     }
 
+    /**
+     * Orders the sequence by the result of the selector in descending order
+     * @param selector The selector to be invoked on each element
+     */
     public OrderByDescending<TReturnType>(selector: (item: T) => TReturnType): OrderedEnumerable<T> {
         return new OrderedEnumerable<T>(this.iteratorGetter, [{ Selector: selector, Direction: 'DESC' }]);
     }
 
+    /**
+     * Reverses the sequence
+     */
     public Reverse(): Enumerable<T> {
         const src = this.ToArray();
         let pointer = src.length - 1;
@@ -443,6 +560,10 @@ export class Enumerable<T> implements Iterable<T> {
         });
     }
 
+    /**
+     * Projects each element of the sequence into a new result
+     * @param selector The selector to be invoked on each element
+     */
     public Select<TReturnType>(selector: (item: T) => TReturnType): Enumerable<TReturnType> {
         const newIterator = Enumerable.makeIterator<T, TReturnType>(this.iteratorGetter(), function (sourceIterator) {
             const nextItem = sourceIterator.next();
@@ -460,6 +581,10 @@ export class Enumerable<T> implements Iterable<T> {
         return Enumerable.Of<TReturnType>(newIterator);
     }
 
+    /**
+     * Projects each element of the sequence into a new sequence, which is then flattened.
+     * @param selector The selector to be invoked on each element
+     */
     public SelectMany<TReturnType>(selector: (item: T) => Enumerable<TReturnType>): Enumerable<TReturnType> {
         const foreignRows = this.Select(selector);
         const foreignRowIterator = foreignRows.iteratorGetter();
@@ -489,6 +614,10 @@ export class Enumerable<T> implements Iterable<T> {
         return Enumerable.Of<TReturnType>(newIterator);
     }
 
+    /**
+     * Returns whether or not two sequences are equal.
+     * @param inner The second sequence
+     */
     public SequenceEqual(inner: Enumerable<T>): boolean {
         if (this.Count() !== inner.Count()) {
             return false;
@@ -498,7 +627,14 @@ export class Enumerable<T> implements Iterable<T> {
             .All(item => item.left === item.right);
     }
 
+    /**
+     * Returns the first element in the sequence. If the sequence is empty or has more than one element, an error is thrown.
+     */
     public Single(): T;
+    /**
+     * Returns the first element in the sequence which matches the predicate. If no elements are valid, the sequence is empty or has more than one element, an error is thrown
+     * @param predicate The predicate to be invoked on each element
+     */
     public Single(predicate: ((item: T) => boolean)): T;
     public Single(predicate?: ((item: T) => boolean)): T {
         if (predicate !== undefined) {
@@ -516,7 +652,14 @@ export class Enumerable<T> implements Iterable<T> {
         }
     }
 
+    /**
+     * Returns the first element in the sequence. If the sequence is empty or has more than one element, null is returned.
+     */
     public SingleOrDefault(): T | null;
+    /**
+     * Returns the first element in the sequence which matches the predicate. If no elements are valid, the sequence is empty or has more than one element, null is returned.
+     * @param predicate The predicate to be invoked on each element
+     */
     public SingleOrDefault(predicate: ((item: T) => boolean)): T | null;
     public SingleOrDefault(predicate?: ((item: T) => boolean)): T | null {
         if (predicate !== undefined) {
@@ -534,6 +677,10 @@ export class Enumerable<T> implements Iterable<T> {
         }
     }
 
+    /**
+     * Skips the specified number of elements in the sequence. If num is less than or equal to zero, no elements are skipped.
+     * @param num The number of elements to skip
+     */
     public Skip(num: number): Enumerable<T> {
         if (num < 0) {
             num = 0;
@@ -542,6 +689,10 @@ export class Enumerable<T> implements Iterable<T> {
         return this.SkipWhile(item => i++ < num);
     }
 
+    /**
+     * Skips elements while the predicate returns false.
+     * @param predicate The predicate to be invoked on each element.
+     */
     public SkipWhile(predicate: (item: T) => boolean): Enumerable<T> {
         let skipped = false;
         const newIterator = Enumerable.makeIterator<T, T>(this.iteratorGetter(), function (sourceIterator) {
@@ -565,7 +716,14 @@ export class Enumerable<T> implements Iterable<T> {
         return Enumerable.Of(newIterator);
     }
 
+    /**
+     * Returns the sum of the sequence. Only supported on Enumerable<number>
+     */
     public Sum(): number;
+    /**
+    * Returns the sum of each element's result of the selector.
+    * @param selector A selector to return the value to be compared
+    */
     public Sum(selector: (item: T) => number): number;
     public Sum(selector?: (item: T) => number) {
         if (!selector) {
@@ -585,6 +743,10 @@ export class Enumerable<T> implements Iterable<T> {
         return num;
     }
 
+    /**
+     * Takes only the specified number of elements in the sequence. If num is less than or equal to zero, no elements are taken.
+     * @param num The number of elements to take
+     */
     public Take(num: number): Enumerable<T> {
         if (num < 0) {
             num = 0;
@@ -602,6 +764,11 @@ export class Enumerable<T> implements Iterable<T> {
         return Enumerable.Of(newIterator);
     }
 
+
+    /**
+     * Takes only while the predicate is true.
+     * @param predicate The predicate to be invoked on each element.
+     */
     public TakeWhile(predicate: (item: T) => boolean): Enumerable<T> {
         const newIterator = Enumerable.makeIterator<T, T>(this.iteratorGetter(), function (sourceIterator) {
             const currentItem = sourceIterator.next();
@@ -615,6 +782,9 @@ export class Enumerable<T> implements Iterable<T> {
         return Enumerable.Of(newIterator);
     }
 
+    /**
+     * Iterates the enumerable and returns an array of the values. This method is not lazily executed.
+     */
     public ToArray(): T[] {
         const items: T[] = [];
         const iterator = this.iteratorGetter();
@@ -626,7 +796,17 @@ export class Enumerable<T> implements Iterable<T> {
         return items;
     }
 
+    /**
+     * Iterates the enumerable and returns a dictionary. This method is not lazily executed.
+     * @param keySelector The selector which returns the key for each element.
+     */
     public ToDictionary<TKey, TValue>(keySelector: (item: T) => TKey): Dictionary<TKey, T>;
+
+    /**
+     * Iterates the enumerable and returns a dictionary. This method is not lazily executed.
+     * @param keySelector The selector which returns the key for each element.
+     * @param valueSelector The selector which returns the value for each element.
+     */
     public ToDictionary<TKey, TValue>(keySelector: (item: T) => TKey, valueSelector: (item: T) => TValue): Dictionary<TKey, TValue>;
     public ToDictionary<TKey, TValue>(keySelector: (item: T) => TKey, valueSelector?: (item: T) => TValue): Dictionary<TKey, TValue> | Dictionary<TKey, T> {
         if (valueSelector) {
@@ -648,7 +828,17 @@ export class Enumerable<T> implements Iterable<T> {
         }
     }
 
+    /**
+     * Iterates the enumerable and returns an immutable dictionary. This method is not lazily executed.
+     * @param keySelector The selector which returns the key for each element.
+     */
     public ToLookup<TKey, TValue>(keySelector: (item: T) => TKey): Lookup<TKey, T>;
+
+    /**
+     * Iterates the enumerable and returns an immutable dictionary. This method is not lazily executed.
+     * @param keySelector The selector which returns the key for each element.
+     * @param valueSelector The selector which returns the value for each element.
+     */
     public ToLookup<TKey, TValue>(keySelector: (item: T) => TKey, valueSelector: (item: T) => TValue): Lookup<TKey, TValue>;
     public ToLookup<TKey, TValue>(keySelector: (item: T) => TKey, valueSelector?: (item: T) => TValue): Lookup<TKey, TValue> | Lookup<TKey, T> {
         if (valueSelector) {
@@ -657,10 +847,18 @@ export class Enumerable<T> implements Iterable<T> {
         return <Lookup<TKey, T>>this.ToDictionary(keySelector);
     }
 
+    /**
+     * Concatenates this sequence with another, and returns only the distinct elements.
+     * @param inner The second sequence
+     */
     public Union(inner: Enumerable<T>): Enumerable<T> {
         return this.Concat(inner).Distinct();
     }
 
+    /**
+     * Filters the sequence based on a predicate
+     * @param predicate The predicate to invoke on each element
+     */
     public Where(predicate: (item: T) => boolean) {
         const newIterator = Enumerable.makeIterator<T, T>(this.iteratorGetter(), function (sourceIterator) {
             let nextItem = sourceIterator.next();
@@ -682,6 +880,11 @@ export class Enumerable<T> implements Iterable<T> {
         return Enumerable.Of(newIterator);
     }
 
+    /**
+     * Apples a function to the corresponding elements of two sequences, producing a single sequence.
+     * @param inner The second sequence
+     * @param selector The function to be applied to two correspending elements of the sequences.
+     */
     public Zip<TInner, TResult>(inner: Enumerable<TInner>, selector: (left: T, right: TInner) => TResult): Enumerable<TResult> {
         const innerIterator = inner.iteratorGetter();
         const newIterator = Enumerable.makeIterator<T, TResult>(this.iteratorGetter(), function (sourceIterator) {
@@ -744,10 +947,18 @@ export class OrderedEnumerable<T> extends Enumerable<T> {
         };
     }
 
+    /**
+     * Provides subsequent ordering of the sequence in ascending order according to the selector
+     * @param selector The function to provide the value to sort on
+     */
     public ThenBy<TReturnType>(selector: (item: T) => TReturnType): Enumerable<T> {
         return new OrderedEnumerable<T>(this.iteratorGetter, [...this.orders, { Selector: selector, Direction: 'ASC' }]);
     }
 
+    /**
+     * Provides subsequent ordering of the sequence in descending order according to the selector
+     * @param selector The function to provide the value to sort on
+     */
     public ThenByDescending<TReturnType>(selector: (item: T) => TReturnType): Enumerable<T> {
         return new OrderedEnumerable<T>(this.iteratorGetter, [...this.orders, { Selector: selector, Direction: 'DESC' }]);
     }
@@ -775,6 +986,10 @@ export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>>
         return JSON.stringify(key);
     }
 
+    /**
+     * Returns the value associated with the key. If the key is not present, an error is thrown
+     * @param key The key to search for.
+     */
     public Get(key: TKey): TValue {
         const id = this.getKey(key);
         const result = this.holder[id];
@@ -784,16 +999,38 @@ export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>>
         return result;
     }
 
+    /**
+     * Returns the value associated with the key. If the key is not present, undefined is return
+     * @param key The key to search for.
+     */
     public TryGetValue(key: TKey): TValue | undefined {
         const id = this.getKey(key);
         const result = this.holder[id];
         return result;
     }
 
+    /**
+     * Returns whether or not the key is present
+     * @param key The key to search for.
+     */
     public ContainsKey(key: TKey): boolean {
         const id = this.getKey(key);
         const result = this.holder[id];
         return result !== undefined;
+    }
+
+    /**
+     * Returns a sequence of the keys.
+     */
+    public get Keys(): Enumerable<TKey> {
+        return Enumerable.Of(this.keys);
+    }
+
+    /**
+     * Returns a sequence of the values.
+     */
+    public get Values(): Enumerable<TValue> {
+        return Enumerable.Of(this.values);
     }
 
     next(value?: any): IteratorResult<KeyValuePair<TKey, TValue>> {
@@ -823,6 +1060,11 @@ export class Dictionary<TKey, TValue> extends Lookup<TKey, TValue> {
         super();
     }
 
+    /**
+     * Adds a key and value. If they key already exists, an error is thrown.
+     * @param key The key to add.
+     * @param value The value to add for the supplied key.
+     */
     public Add(key: TKey, value: TValue): void {
         if (this.TryGetValue(key)) {
             throw new Error('An item with the same key has already been added.');
@@ -833,6 +1075,11 @@ export class Dictionary<TKey, TValue> extends Lookup<TKey, TValue> {
         this.values.push(value);
     }
 
+    /**
+     * Adds a key and value. If they key already exists, it is overwritten with the new value.
+     * @param key The key to add.
+     * @param value The value to add for the supplied key.
+     */
     public AddOrReplace(key: TKey, value: TValue): void {
         const id = this.getKey(key);
         const didExist = this.TryGetValue(key);
@@ -842,14 +1089,6 @@ export class Dictionary<TKey, TValue> extends Lookup<TKey, TValue> {
         }
         this.holder[id] = value;
         this.values.push(value);
-    }
-
-    public get Keys(): Enumerable<TKey> {
-        return Enumerable.Of(this.keys);
-    }
-
-    public get Values(): Enumerable<TValue> {
-        return Enumerable.Of(this.values);
     }
 }
 
