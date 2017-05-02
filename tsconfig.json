@@ -1,7 +1,7 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "outDir": "./dist",
+    "outDir": "./ts-out",
     "sourceMap": false,
     "noImplicitAny": true,
     "strictNullChecks": true,
