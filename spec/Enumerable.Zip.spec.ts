@@ -9,7 +9,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .Zip(Enumerable.Of(source2), (left, right) => { return { left, right } })
+                    .Zip(source2, (left, right) => { return { left, right } })
                     .ToArray();
 
             expect(result).toEqual(expected);
@@ -22,7 +22,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .Zip(Enumerable.Of(source2), (left, right) => { return { left, right } })
+                    .Zip(source2, (left, right) => { return { left, right } })
                     .ToArray();
 
             expect(result).toEqual(expected);
@@ -35,7 +35,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .Zip(Enumerable.Of(source2), (left, right) => { return { left, right } })
+                    .Zip(source2, (left, right) => { return { left, right } })
                     .ToArray();
 
             expect(result).toEqual(expected);
@@ -49,7 +49,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .Zip(Enumerable.Of(source2), (left, right) => { return { left, right } })
+                    .Zip(source2, (left, right) => { return { left, right } })
                     .ToArray();
 
             expect(result).toEqual(expected);
@@ -62,7 +62,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .Zip(Enumerable.Of(source2), (left, right) => { return { left, right } })
+                    .Zip(source2, (left, right) => { return { left, right } })
                     .ToArray();
 
             expect(result).toEqual(expected);

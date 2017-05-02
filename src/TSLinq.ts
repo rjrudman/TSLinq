@@ -1,6 +1,23 @@
 import { DefaultEqual, DefaultCompare, EqualityEqualsMethod, EqualityGetHashCodeMethod, DefaultHash } from './TSLinqEqualityComparisons';
 import { ArrayIterator } from './TSLinqIterators';
 
+export type TSLinqEnumerableKind = 'TSLinqEnumerable';
+function isEnumerable<T>(obj: any): obj is Enumerable<T> {
+    if (!obj) {
+        return false;
+    }
+
+    return (<Enumerable<T>>obj).____Kind === Enumerable.Kind;
+}
+
+function isArray<T>(obj: any): obj is T[] {
+    if (!obj) {
+        return false;
+    }
+    const objDefinition = {}.toString.call(obj);
+    return objDefinition === '[object Array]';
+}
+
 function isGeneratorFunction<T>(obj: any): obj is (() => Iterator<T>) {
     if (!obj) {
         return false;
@@ -15,18 +32,26 @@ export interface Grouping<T, TValue> {
     Values: Enumerable<TValue>
 }
 
+export type ConvertableToEnumerable<T> = T[] | Enumerable<T> | (() => Iterator<T>);
 export class Enumerable<T> implements Iterable<T> {
-    protected iteratorGetter: () => Iterator<T>;
+    public static Kind: TSLinqEnumerableKind = 'TSLinqEnumerable';
+    public ____Kind: TSLinqEnumerableKind = Enumerable.Kind;
 
+    protected iteratorGetter: () => Iterator<T>;
     /**
      * Creates an Enumerable which encapsulates the provided source
-     * @param source Either an array of T, or an Iterator<T>. An Iterator<T> can be manually created, or using function generators.
+     * @param source Either an Enumerable<T>, an array of T, or an Iterator<T>. An Iterator<T> can be manually created, or using function generators.
      */
-    public static Of<T>(source: T[] | (() => Iterator<T>)): Enumerable<T> {
-        if (isGeneratorFunction(source)) {
+    public static Of<T>(source: ConvertableToEnumerable<T>): Enumerable<T> {
+        if (isArray(source)) {
+            return new Enumerable<T>(() => new ArrayIterator<T>(source));
+        } else if (isGeneratorFunction(source)) {
             return new Enumerable<T>(source);
+        } else if (isEnumerable(source)) {
+            return source;
         }
-        return new Enumerable<T>(() => new ArrayIterator<T>(source));
+
+        throw new Error('Invalid type supplied. Only supports arrays, generator functions and enumerables.');
     }
 
     protected static makeIteratorGetter<T, TReturnIteratorType>(
@@ -152,8 +177,8 @@ export class Enumerable<T> implements Iterable<T> {
      * Concatenates the current sequence with the supplied sequence
      * @param second The sequence to concatenate
      */
-    public Concat(second: Enumerable<T>): Enumerable<T> {
-        return Enumerable.Of([this, second]).SelectMany(a => a);
+    public Concat(second: ConvertableToEnumerable<T>): Enumerable<T> {
+        return Enumerable.Of([this, Enumerable.Of(second)]).SelectMany(a => a);
     };
 
     /**
@@ -243,8 +268,8 @@ export class Enumerable<T> implements Iterable<T> {
      * Returns the distinct elements in the sequence which are not found in the provided sequence
      * @param other The sequence containing elements to be excluded
      */
-    public Except(other: Enumerable<T>): Enumerable<T> {
-        const otherArray = other.ToArray();
+    public Except(other: ConvertableToEnumerable<T>): Enumerable<T> {
+        const otherArray = Enumerable.Of(other).ToArray();
         return this.Distinct().Where(a => otherArray.indexOf(a) === -1);
     }
 
@@ -332,14 +357,15 @@ export class Enumerable<T> implements Iterable<T> {
      * @param innerKeySelector Key selector for the inner sequence
      * @param resultSelector Selector to transform the result
      */
-    public GroupJoin<TInner, TKey, TResult>(inner: Enumerable<TInner>,
+    public GroupJoin<TInner, TKey, TResult>(inner: ConvertableToEnumerable<TInner>,
         outerKeySelector: ((item: T) => TKey),
         innerKeySelector: ((item: TInner) => TKey),
         resultSelector: ((originalRow: T, innerRows: Enumerable<TInner>) => TResult)): Enumerable<TResult> {
 
+        const innerEnumerable = Enumerable.Of(inner);
         return this.Select(a => {
             const outerKey = outerKeySelector(a);
-            const innerRows = inner.Where(i => innerKeySelector(i) === outerKey);
+            const innerRows = innerEnumerable.Where(i => innerKeySelector(i) === outerKey);
             const result = resultSelector(a, innerRows);
             return result;
         });
@@ -349,8 +375,9 @@ export class Enumerable<T> implements Iterable<T> {
      * Returns distinct elements which are present in both sequences
      * @param inner The second sequence
      */
-    public Intersect(inner: Enumerable<T>): Enumerable<T> {
-        return this.Where(x => inner.Contains(x)).Distinct();
+    public Intersect(inner: ConvertableToEnumerable<T>): Enumerable<T> {
+        const innerEnumerable = Enumerable.Of(inner);
+        return this.Where(x => innerEnumerable.Contains(x)).Distinct();
     }
 
     /**
@@ -360,14 +387,15 @@ export class Enumerable<T> implements Iterable<T> {
      * @param innerKeySelector Key selector for the inner sequence
      * @param resultSelector Selector to transform the result
      */
-    public Join<TInner, TKey, TResult>(inner: Enumerable<TInner>,
+    public Join<TInner, TKey, TResult>(inner: ConvertableToEnumerable<TInner>,
         outerKeySelector: ((item: T) => TKey),
         innerKeySelector: ((item: TInner) => TKey),
         resultSelector: ((originalRow: T, innerRow: TInner) => TResult)): Enumerable<TResult> {
 
+        const innerEnumerable = Enumerable.Of(inner);
         return this.SelectMany(a => {
             const outerKey = outerKeySelector(a);
-            const innerRows = inner.Where(i => innerKeySelector(i) === outerKey);
+            const innerRows = innerEnumerable.Where(i => innerKeySelector(i) === outerKey);
             return innerRows.Select(innerRow => {
                 return resultSelector(a, innerRow);
             })
@@ -538,7 +566,7 @@ export class Enumerable<T> implements Iterable<T> {
      * Projects each element of the sequence into a new sequence, which is then flattened.
      * @param selector The selector to be invoked on each element
      */
-    public SelectMany<TReturnType>(selector: (item: T) => Enumerable<TReturnType>): Enumerable<TReturnType> {
+    public SelectMany<TReturnType>(selector: (item: T) => ConvertableToEnumerable<TReturnType>): Enumerable<TReturnType> {
         const generator = () => {
             const foreignRows = this.Select(selector);
             const foreignRowIterator = foreignRows.iteratorGetter();
@@ -562,7 +590,7 @@ export class Enumerable<T> implements Iterable<T> {
                             value: <any>null
                         }
                     }
-                    currentRowIterator = nextSet.value.iteratorGetter();
+                    currentRowIterator = Enumerable.Of(nextSet.value).iteratorGetter();
                 }
             });
             return newIterator;
@@ -574,12 +602,13 @@ export class Enumerable<T> implements Iterable<T> {
      * Returns whether or not two sequences are equal.
      * @param inner The second sequence
      */
-    public SequenceEqual(inner: Enumerable<T>): boolean {
-        if (this.Count() !== inner.Count()) {
+    public SequenceEqual(inner: ConvertableToEnumerable<T>): boolean {
+        const innerEnumerable = Enumerable.Of(inner);
+        if (this.Count() !== innerEnumerable.Count()) {
             return false;
         }
 
-        return this.Zip(inner, (left, right) => { return { left, right } })
+        return this.Zip(innerEnumerable, (left, right) => { return { left, right } })
             .All(item => DefaultEqual(item.left, item.right));
     }
 
@@ -802,7 +831,7 @@ export class Enumerable<T> implements Iterable<T> {
      * Concatenates this sequence with another, and returns only the distinct elements.
      * @param inner The second sequence
      */
-    public Union(inner: Enumerable<T>): Enumerable<T> {
+    public Union(inner: ConvertableToEnumerable<T>): Enumerable<T> {
         return this.Concat(inner).Distinct();
     }
 
@@ -825,8 +854,9 @@ export class Enumerable<T> implements Iterable<T> {
      * @param inner The second sequence
      * @param selector The function to be applied to two correspending elements of the sequences.
      */
-    public Zip<TInner, TResult>(inner: Enumerable<TInner>, selector: (left: T, right: TInner) => TResult): Enumerable<TResult> {
-        const innerIterator = inner.iteratorGetter();
+    public Zip<TInner, TResult>(inner: ConvertableToEnumerable<TInner>, selector: (left: T, right: TInner) => TResult): Enumerable<TResult> {
+        const innerEnumerable = Enumerable.Of(inner);
+        const innerIterator = innerEnumerable.iteratorGetter();
         return this.SelectMany(a => {
             const nextInner = innerIterator.next();
             if (nextInner.done) {

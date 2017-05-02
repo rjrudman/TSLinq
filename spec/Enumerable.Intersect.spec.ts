@@ -10,7 +10,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .Intersect(Enumerable.Of(source2))
+                    .Intersect(source2)
                     .ToArray();
 
             expect(result).toEqual(expected);

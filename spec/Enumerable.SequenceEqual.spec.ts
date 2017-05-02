@@ -9,7 +9,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .SequenceEqual(Enumerable.Of(source2));
+                    .SequenceEqual(source2);
 
             expect(result).toEqual(expected);
         });
@@ -21,7 +21,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .SequenceEqual(Enumerable.Of(source2));
+                    .SequenceEqual(source2);
 
             expect(result).toEqual(expected);
         });
@@ -33,7 +33,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .SequenceEqual(Enumerable.Of(source2));
+                    .SequenceEqual(source2);
 
             expect(result).toEqual(expected);
         });
@@ -45,7 +45,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .SequenceEqual(Enumerable.Of(source2));
+                    .SequenceEqual(source2);
 
             expect(result).toEqual(expected);
         });
@@ -58,7 +58,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .SequenceEqual(Enumerable.Of(source2));
+                    .SequenceEqual(source2);
 
             expect(result).toEqual(expected);
         });
@@ -71,7 +71,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .SequenceEqual(Enumerable.Of(source2));
+                    .SequenceEqual(source2);
 
             expect(result).toEqual(expected);
         });

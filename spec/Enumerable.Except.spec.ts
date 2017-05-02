@@ -10,7 +10,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .Except(Enumerable.Of(source2))
+                    .Except(source2)
                     .ToArray();
 
             expect(result).toEqual(expected);
@@ -24,7 +24,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .Except(Enumerable.Of(source2))
+                    .Except(source2)
                     .ToArray();
 
             expect(result).toEqual(expected);
@@ -38,7 +38,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .Except(Enumerable.Of(source2))
+                    .Except(source2)
                     .ToArray();
 
             expect(result).toEqual(expected);

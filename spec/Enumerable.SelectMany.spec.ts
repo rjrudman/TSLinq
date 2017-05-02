@@ -13,7 +13,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .SelectMany(a => Enumerable.Of(a.children))
+                    .SelectMany(a => a.children)
                     .ToArray();
 
             expect(result).toEqual(expected);
