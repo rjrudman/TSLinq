@@ -110,6 +110,21 @@ describe('Dictionary', () => {
 
             expect(dictionary.Get(someObject)).toBe(1);
             expect(dictionary.Get(0)).toBe(2);
+        });
+
+        it('Should use the provided hash function', () => {
+            const hashFunction = (item: any) => { return 1 };
+
+            const dictionary = new Dictionary<any, number>(hashFunction);
+            const someObject = {};
+            dictionary.Add(someObject, 1);
+            expect(() => {
+                dictionary.Add(5, 2);
+            }).toThrow(new Error('An item with the same key has already been added.'))
+
+            expect(() => {
+                dictionary.Add('Hello', 3);
+            }).toThrow(new Error('An item with the same key has already been added.'))
         })
     });
 });
