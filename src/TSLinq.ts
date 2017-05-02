@@ -1,7 +1,7 @@
 import { DefaultEqual, DefaultCompare, EqualityEqualsMethod, EqualityGetHashCodeMethod, DefaultHash } from './TSLinqEqualityComparisons';
 import { ArrayIterator } from './TSLinqIterators';
 
-type TSLinqEnumerableKind = 'TSLinqEnumerable';
+export type TSLinqEnumerableKind = 'TSLinqEnumerable';
 function isEnumerable<T>(obj: any): obj is Enumerable<T> {
     if (!obj) {
         return false;
@@ -32,7 +32,7 @@ export interface Grouping<T, TValue> {
     Values: Enumerable<TValue>
 }
 
-type ConvertableToEnumerable<T> = T[] | Enumerable<T> | (() => Iterator<T>);
+export type ConvertableToEnumerable<T> = T[] | Enumerable<T> | (() => Iterator<T>);
 export class Enumerable<T> implements Iterable<T> {
     public static Kind: TSLinqEnumerableKind = 'TSLinqEnumerable';
     public ____Kind: TSLinqEnumerableKind = Enumerable.Kind;
