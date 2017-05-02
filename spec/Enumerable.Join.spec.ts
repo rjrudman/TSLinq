@@ -14,7 +14,7 @@ describe('Enumerable', () => {
 
             const result =
                 Enumerable.Of(source)
-                    .Join(Enumerable.Of(source2), i => i, i => i, (originalRow, innerRow) => {
+                    .Join(source2, i => i, i => i, (originalRow, innerRow) => {
                         return {
                             originalRow, innerRow
                         }
