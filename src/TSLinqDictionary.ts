@@ -1,8 +1,8 @@
 import { Lookup } from './TSLinqLookup';
-import { HashFunction, DefaultHash } from './TSLinqExt';
+import { EqualityGetHashCodeMethod, DefaultHash } from './TSLinqEqualityComparisons';
 
 export class Dictionary<TKey, TValue> extends Lookup<TKey, TValue> {
-    constructor(hashFunction: HashFunction = DefaultHash) {
+    constructor(hashFunction: EqualityGetHashCodeMethod<TKey> = DefaultHash) {
         super(hashFunction);
     }
 

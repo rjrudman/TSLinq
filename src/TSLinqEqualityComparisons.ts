@@ -1,5 +1,5 @@
 // Thanks to http://stackoverflow.com/a/1997811/563532
-const getObjectId: ((obj: any) => number) = function () {
+export const GetObjectIdentity: ((obj: any) => number) = function () {
     let id = 0;
     return function (o: any) {
         if (typeof o.__uniqueid === 'undefined') {
@@ -14,20 +14,33 @@ const getObjectId: ((obj: any) => number) = function () {
     };
 }();
 
-export type HashFunction = (item: any) => string | number;
+export type EqualityEqualsMethod<T> = (left: T, right: T) => boolean;
+export type EqualityGetHashCodeMethod<T> = (item: T) => number | string;
+export type EqualityCompareMethod<T> = (left: T, right: T) => number;
+
+export interface EqualityComparer<T> {
+    Equals: EqualityEqualsMethod<T>
+    GetHashCode: EqualityGetHashCodeMethod<T>;
+}
+
+export class DefaultEqualityComparer<T> implements EqualityComparer<T> {
+    public Equals(left: T, right: T): boolean {
+        return this.GetHashCode(left) === this.GetHashCode(right);
+    }
+    public GetHashCode(item: T): number | string {
+        return DefaultHash(item);
+    }
+}
+
 export function DefaultHash(item: any): string | number {
     if (typeof (item) === 'object') {
-        return getObjectId(item);
+        return GetObjectIdentity(item);
     }
     return JSON.stringify(item);
 }
-
-export type CompareFunction = (leftItem: any, rightItem: any) => number;
 export function DefaultCompare(leftItem: any, rightItem: any): number {
     return leftItem - rightItem;
 }
-
-export type EqualFunction = (leftItem: any, rightItem: any) => boolean;
 export function DefaultEqual(leftItem: any, rightItem: any): boolean {
     return DefaultHash(leftItem) === DefaultHash(rightItem);
 }

@@ -1,4 +1,4 @@
-import { HashFunction, DefaultHash } from './TSLinqExt';
+import { DefaultHash, EqualityGetHashCodeMethod } from './TSLinqEqualityComparisons';
 import { Enumerable } from './TSLinq';
 
 export interface KeyValuePair<TKey, TValue> {
@@ -8,12 +8,12 @@ export interface KeyValuePair<TKey, TValue> {
 
 export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>> implements Iterator<KeyValuePair<TKey, TValue>> {
     private pointer = 0;
-    protected hashFunction: HashFunction;
+    protected hashFunction: EqualityGetHashCodeMethod<TKey>;
     protected holder: any = {};
     protected keys: TKey[] = []
     protected values: TValue[] = [];
 
-    protected constructor(hashFunction: HashFunction = DefaultHash) {
+    protected constructor(hashFunction: EqualityGetHashCodeMethod<TKey> = DefaultHash) {
         super(() => this);
         this.hashFunction = hashFunction;
     }

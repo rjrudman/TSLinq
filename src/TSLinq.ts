@@ -1,4 +1,4 @@
-import { EqualFunction, DefaultEqual, DefaultCompare } from './TSLinqExt';
+import { DefaultEqual, DefaultCompare, EqualityEqualsMethod } from './TSLinqEqualityComparisons';
 import { Dictionary } from './TSLinqDictionary';
 import { Lookup } from './TSLinqLookup';
 import { ArrayIterator } from './TSLinqIterators';
@@ -163,7 +163,7 @@ export class Enumerable<T> implements Iterable<T> {
      * @param item The element to search for
      * @param compareFunction An optional parameter which provides a custom equality method
      */
-    public Contains(element: T, equalFunction: EqualFunction = DefaultEqual): boolean {
+    public Contains(element: T, equalFunction: EqualityEqualsMethod<T> = DefaultEqual): boolean {
         return this.Any(a => equalFunction(a, element));
     };
 

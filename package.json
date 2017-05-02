@@ -3,13 +3,14 @@
   "version": "1.0.10",
   "description": "ES5 compatable implementation of LINQ and lazily executed enumerables for typescript.",
   "typescript": {
-    "definition": "dist/linq.d.ts"
+    "definition": "dist/TSLinqEntry.d.ts"
   },
+  "typings": "dist/TSLinqEntry.d.ts",
   "scripts": {
     "build": "tsc -d",
     "start": "tsc -w",
     "test": "jasmine",
-    "buildprod": "tsc src/TSLinq.ts -d --lib es2015 --target ES5 --outDir dist"
+    "buildprod": "tsc src/TSLinqEntry.ts -d --lib es2015 --target ES5 --outDir dist"
   },
   "keywords": [
     "linq",
@@ -23,12 +24,11 @@
     "email": "rjrudman@gmail.com",
     "url": "https://github.com/rjrudman/TSLinq"
   },
-  "license": "ISC",
-  "typings": "dist/TSLinq.d.ts",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/rjrudman/TSLinq/issues"
   },
-  "main": "dist/TSLinq.js",
+  "main": "dist/TSLinqEntry.js",
   "devDependencies": {
     "jasmine-core": "^2.6.1",
     "tslint": "^5.1.0",
