@@ -37,19 +37,20 @@ export class Enumerable<T> implements Iterable<T> {
         return new Enumerable<T>(() => new ArrayIterator<T>(source));
     }
 
-    protected static makeIteratorGetter<T, TReturnIteratorType>(sourceIterator: Iterator<T>, next: ((sourceIterator: Iterator<T>) => IteratorResult<TReturnIteratorType>)) {
-        const getter = () => {
-            const iterator: Iterator<TReturnIteratorType> = {
-                next: function () {
-                    return next(sourceIterator);
-                }
+    protected static makeIteratorGetter<T, TReturnIteratorType>(
+        sourceIteratorGetter: () => Iterator<T>,
+        next: ((sourceIterator: Iterator<T>) => IteratorResult<TReturnIteratorType>)
+    ): Iterator<TReturnIteratorType> {
+        const sourceIterator = sourceIteratorGetter();
+        const iterator: Iterator<TReturnIteratorType> = {
+            next: function () {
+                return next(sourceIterator);
             }
-            if (sourceIterator.return) {
-                iterator.return = <any>(sourceIterator.return);
-            }
-            return iterator;
-        };
-        return getter;
+        }
+        if (sourceIterator.return) {
+            iterator.return = <any>(sourceIterator.return);
+        }
+        return iterator;
     }
 
     protected constructor(iteratorGetter: () => Iterator<T>) {
@@ -449,6 +450,13 @@ export class Enumerable<T> implements Iterable<T> {
     }
 
     /**
+     * Materializes the sequence and wraps it in an Enumerable. This causes previous sequences to no longer be iterated.
+     */
+    public Materialize(): Enumerable<T> {
+        return Enumerable.Of(this.ToArray());
+    }
+
+    /**
      * Returns the min value of the sequence. Only supported on Enumerable<number>
      */
     public Min(): number;
@@ -517,19 +525,21 @@ export class Enumerable<T> implements Iterable<T> {
      * @param selector The selector to be invoked on each element
      */
     public Select<TReturnType>(selector: (item: T) => TReturnType): Enumerable<TReturnType> {
-        const newIterator = Enumerable.makeIteratorGetter<T, TReturnType>(this.iteratorGetter(), function (sourceIterator) {
-            const nextItem = sourceIterator.next();
-            if (nextItem.done) {
-                return {
-                    done: true,
-                    value: <any>null
+        const newIterator = () => {
+            return Enumerable.makeIteratorGetter<T, TReturnType>(this.iteratorGetter, function (sourceIterator) {
+                const nextItem = sourceIterator.next();
+                if (nextItem.done) {
+                    return {
+                        done: true,
+                        value: <any>null
+                    }
                 }
-            }
-            return {
-                done: false,
-                value: selector(nextItem.value)
-            };
-        });
+                return {
+                    done: false,
+                    value: selector(nextItem.value)
+                };
+            });
+        };
         return Enumerable.Of<TReturnType>(newIterator);
     }
 
@@ -538,32 +548,35 @@ export class Enumerable<T> implements Iterable<T> {
      * @param selector The selector to be invoked on each element
      */
     public SelectMany<TReturnType>(selector: (item: T) => Enumerable<TReturnType>): Enumerable<TReturnType> {
-        const foreignRows = this.Select(selector);
-        const foreignRowIterator = foreignRows.iteratorGetter();
-        let currentRowIterator: Iterator<TReturnType> | undefined;
-        const newIterator = Enumerable.makeIteratorGetter<T, TReturnType>(this.iteratorGetter(), function (sourceIterator) {
-            while (true) {
-                if (currentRowIterator) {
-                    const nextRow = currentRowIterator.next();
-                    if (!nextRow.done) {
-                        return {
-                            done: false,
-                            value: nextRow.value
+        const generator = () => {
+            const foreignRows = this.Select(selector);
+            const foreignRowIterator = foreignRows.iteratorGetter();
+            let currentRowIterator: Iterator<TReturnType> | undefined;
+            const newIterator = Enumerable.makeIteratorGetter<T, TReturnType>(this.iteratorGetter, function (sourceIterator) {
+                while (true) {
+                    if (currentRowIterator) {
+                        const nextRow = currentRowIterator.next();
+                        if (!nextRow.done) {
+                            return {
+                                done: false,
+                                value: nextRow.value
+                            }
                         }
                     }
-                }
 
-                const nextSet = foreignRowIterator.next();
-                if (nextSet.done) {
-                    return {
-                        done: true,
-                        value: <any>null
+                    const nextSet = foreignRowIterator.next();
+                    if (nextSet.done) {
+                        return {
+                            done: true,
+                            value: <any>null
+                        }
                     }
+                    currentRowIterator = nextSet.value.iteratorGetter();
                 }
-                currentRowIterator = nextSet.value.iteratorGetter();
-            }
-        });
-        return Enumerable.Of<TReturnType>(newIterator);
+            });
+            return newIterator;
+        };
+        return Enumerable.Of<TReturnType>(generator);
     }
 
     /**
@@ -688,21 +701,24 @@ export class Enumerable<T> implements Iterable<T> {
      * @param num The number of elements to take
      */
     public Take(num: number): Enumerable<T> {
-        if (num < 0) {
-            num = 0;
-        }
-        let numTaken = 0;
-        // We use makeIterator here instead of SelectMany, as we don't want to iterate past the number we're supposed to take.
-        const newIterator = Enumerable.makeIteratorGetter<T, T>(this.iteratorGetter(), function (sourceIterator) {
-            if (numTaken >= num) {
-                return { done: true, value: <any>null };
-            } else {
-                numTaken++;
-                return sourceIterator.next();
+        const generator = () => {
+            // We don't make use of TakeWhile() here because that would mean we'd inspect one more item than we need to.
+            if (num < 0) {
+                num = 0;
             }
-        });
+            let numTaken = 0;
+            const newIterator = Enumerable.makeIteratorGetter<T, T>(this.iteratorGetter, function (sourceIterator) {
+                if (numTaken >= num) {
+                    return { done: true, value: <any>null };
+                } else {
+                    numTaken++;
+                    return sourceIterator.next();
+                }
+            });
+            return newIterator;
+        }
 
-        return Enumerable.Of(newIterator);
+        return Enumerable.Of(generator);
     }
 
     /**
@@ -710,16 +726,20 @@ export class Enumerable<T> implements Iterable<T> {
      * @param predicate The predicate to be invoked on each element.
      */
     public TakeWhile(predicate: (item: T) => boolean): Enumerable<T> {
-        const newIterator = Enumerable.makeIteratorGetter<T, T>(this.iteratorGetter(), function (sourceIterator) {
-            const currentItem = sourceIterator.next();
-            if (currentItem.done || predicate(currentItem.value)) {
-                return currentItem;
-            } else {
-                return { done: true, value: <any>null };
-            }
-        });
+        const generator = () => {
+            // We can't use SelectMany() here, because doing so would iterate the entire collection
+            const newIterator = Enumerable.makeIteratorGetter<T, T>(this.iteratorGetter, function (sourceIterator) {
+                const currentItem = sourceIterator.next();
+                if (currentItem.done || predicate(currentItem.value)) {
+                    return currentItem;
+                } else {
+                    return { done: true, value: <any>null };
+                }
+            });
+            return newIterator;
+        }
 
-        return Enumerable.Of(newIterator);
+        return Enumerable.Of(generator);
     }
 
     /**
