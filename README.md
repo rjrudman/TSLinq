@@ -51,3 +51,28 @@ console.log(FirstTenNumbers);
 
 // Outputs [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
 ```
+
+## Using manually created generator functions
+
+```
+let i = 0;
+const generator = () => {
+    return {
+        next: function () {
+            if (i >= 3) {
+                throw new Error('Generator should not be invoked when the enumerable hasn\'t been materialized');
+            }
+            return { done: false, value: i++ };
+        }
+    };
+};
+
+const result =
+    Enumerable.Of(generator)
+        .Take(3)
+        .ToArray();
+
+console.log(result);
+
+// Outputs [ 0, 1, 2 ]
+```
