@@ -172,11 +172,10 @@ export class Enumerable<T> implements Iterable<T> {
     /**
      * Returns whether or not the sequence contains the specified element
      * @param item The element to search for
-     * @param hashFunction An optional parameter which provides a custom hash method
+     * @param compareFunction An optional parameter which provides a custom equality method
      */
-    public Contains(element: T, hashFunction: HashFunction = DefaultHash): boolean {
-        const elementKey = hashFunction(element);
-        return this.Any(a => hashFunction(a) === elementKey);
+    public Contains(element: T, equalFunction: EqualFunction = DefaultEqual): boolean {
+        return this.Any(a => equalFunction(a, element));
     };
 
     /**
@@ -594,7 +593,7 @@ export class Enumerable<T> implements Iterable<T> {
         }
 
         return this.Zip(inner, (left, right) => { return { left, right } })
-            .All(item => item.left === item.right);
+            .All(item => DefaultEqual(item.left, item.right));
     }
 
     /**
@@ -876,10 +875,13 @@ export class OrderedEnumerable<T> extends Enumerable<T> {
                                 const order = orders[i];
                                 const orderSelector = order.Selector;
                                 if (currentResult === 0) {
+                                    const leftSelected = orderSelector(left);
+                                    const rightSelected = orderSelector(right);
+
                                     if (order.Direction === 'ASC') {
-                                        currentResult = orderSelector(left) - orderSelector(right);
+                                        currentResult = DefaultCompare(leftSelected, rightSelected);
                                     } else {
-                                        currentResult = orderSelector(right) - orderSelector(left);
+                                        currentResult = DefaultCompare(rightSelected, leftSelected);
                                     }
                                 }
                             }
@@ -924,6 +926,16 @@ export function DefaultHash(item: any): string | number {
         return getObjectId(item);
     }
     return JSON.stringify(item);
+}
+
+export type CompareFunction = (leftItem: any, rightItem: any) => number;
+export function DefaultCompare(leftItem: any, rightItem: any): number {
+    return leftItem - rightItem;
+}
+
+export type EqualFunction = (leftItem: any, rightItem: any) => boolean;
+export function DefaultEqual(leftItem: any, rightItem: any): boolean {
+    return DefaultHash(leftItem) === DefaultHash(rightItem);
 }
 
 export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>> implements Iterator<KeyValuePair<TKey, TValue>> {
