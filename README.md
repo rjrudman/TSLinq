@@ -28,7 +28,7 @@ let things = Enumerable.Of([1, 2, 3])
     .Distinct()
     .ToArray();
     
-console.Log(things);
+console.log(things);
 
 // Outputs [ 3, 4 ]
 ```
