@@ -1,4 +1,4 @@
-import { Dictionary } from '../src/TSLinqDictionary';
+import { Dictionary } from '../src/TSLinq';
 
 describe('Dictionary', () => {
     describe('Add', () => {

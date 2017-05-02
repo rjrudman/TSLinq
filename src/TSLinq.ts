@@ -1,6 +1,4 @@
-import { DefaultEqual, DefaultCompare, EqualityEqualsMethod } from './TSLinqEqualityComparisons';
-import { Dictionary } from './TSLinqDictionary';
-import { Lookup } from './TSLinqLookup';
+import { DefaultEqual, DefaultCompare, EqualityEqualsMethod, EqualityGetHashCodeMethod, DefaultHash } from './TSLinqEqualityComparisons';
 import { ArrayIterator } from './TSLinqIterators';
 
 function isGeneratorFunction<T>(obj: any): obj is (() => Iterator<T>) {
@@ -903,3 +901,128 @@ export class OrderedEnumerable<T> extends Enumerable<T> {
         return new OrderedEnumerable<T>(this.iteratorGetter, [...this.orders, { Selector: selector, Direction: 'DESC' }]);
     }
 }
+
+
+export interface KeyValuePair<TKey, TValue> {
+    Key: TKey,
+    Value: TValue
+}
+
+export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>> implements Iterator<KeyValuePair<TKey, TValue>> {
+    private pointer = 0;
+    protected hashFunction: EqualityGetHashCodeMethod<TKey>;
+    protected holder: any = {};
+    protected keys: TKey[] = []
+    protected values: TValue[] = [];
+
+    protected constructor(hashFunction: EqualityGetHashCodeMethod<TKey> = DefaultHash) {
+        super(() => this);
+        this.hashFunction = hashFunction;
+    }
+
+    /**
+     * Returns the value associated with the key. If the key is not present, an error is thrown
+     * @param key The key to search for.
+     */
+    public Get(key: TKey): TValue {
+        const id = this.hashFunction(key);
+        const result = this.holder[id];
+        if (result === undefined) {
+            throw new Error('The given key was not present in the dictionary.')
+        }
+        return result;
+    }
+
+    /**
+     * Returns the value associated with the key. If the key is not present, undefined is return
+     * @param key The key to search for.
+     */
+    public TryGetValue(key: TKey): TValue | undefined {
+        const id = this.hashFunction(key);
+        const result = this.holder[id];
+        return result;
+    }
+
+    /**
+     * Returns whether or not the key is present
+     * @param key The key to search for.
+     */
+    public ContainsKey(key: TKey): boolean {
+        const id = this.hashFunction(key);
+        const result = this.holder[id];
+        return result !== undefined;
+    }
+
+    /**
+     * Returns a sequence of the keys.
+     */
+    public get Keys(): Enumerable<TKey> {
+        return Enumerable.Of(this.keys);
+    }
+
+    /**
+     * Returns a sequence of the values.
+     */
+    public get Values(): Enumerable<TValue> {
+        return Enumerable.Of(this.values);
+    }
+
+    next(value?: any): IteratorResult<KeyValuePair<TKey, TValue>> {
+        if (this.pointer < this.keys.length) {
+            const key = this.keys[this.pointer++];
+            return {
+                done: false, value: {
+                    Key: key,
+                    Value: this.Get(key)
+                }
+            };
+        } else {
+            return {
+                done: true,
+                value: <any>null
+            }
+        }
+    }
+    reset(value?: any): IteratorResult<KeyValuePair<TKey, TValue>> {
+        this.pointer = 0;
+        return { done: true, value: <any>null };
+    }
+}
+
+export class Dictionary<TKey, TValue> extends Lookup<TKey, TValue> {
+    constructor(hashFunction: EqualityGetHashCodeMethod<TKey> = DefaultHash) {
+        super(hashFunction);
+    }
+
+    /**
+     * Adds a key and value. If they key already exists, an error is thrown.
+     * @param key The key to add.
+     * @param value The value to add for the supplied key.
+     */
+    public Add(key: TKey, value: TValue): void {
+        if (this.TryGetValue(key)) {
+            throw new Error('An item with the same key has already been added.');
+        }
+        const id = this.hashFunction(key);
+        this.holder[id] = value;
+        this.keys.push(key);
+        this.values.push(value);
+    }
+
+    /**
+     * Adds a key and value. If they key already exists, it is overwritten with the new value.
+     * @param key The key to add.
+     * @param value The value to add for the supplied key.
+     */
+    public AddOrReplace(key: TKey, value: TValue): void {
+        const id = this.hashFunction(key);
+        const didExist = this.TryGetValue(key);
+
+        if (!didExist) {
+            this.keys.push(key);
+        }
+        this.holder[id] = value;
+        this.values.push(value);
+    }
+}
+
