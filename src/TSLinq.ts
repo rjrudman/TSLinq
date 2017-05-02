@@ -21,9 +21,8 @@ function getKey(key: any) {
     return JSON.stringify(key);
 }
 
-function isIterator<T>(obj: any): obj is Iterator<T> {
-    const it = <Iterator<T>>obj;
-    return it.next !== undefined;
+function isIterator<T>(obj: any): obj is (() => Iterator<T>) {
+    return obj && {}.toString.call(obj) === '[object Function]';
 }
 
 export interface Grouping<T, TValue> {
@@ -38,23 +37,26 @@ export class Enumerable<T> implements Iterable<T> {
      * Creates an Enumerable which encapsulates the provided source
      * @param source Either an array of T, or an Iterator<T>. An Iterator<T> can be manually created, or using function generators.
      */
-    public static Of<T>(source: T[] | Iterator<T>): Enumerable<T> {
+    public static Of<T>(source: T[] | (() => Iterator<T>)): Enumerable<T> {
         if (isIterator(source)) {
-            return new Enumerable<T>(() => source);
+            return new Enumerable<T>(source);
         }
-        return new Enumerable<T>(() => new EmptyIterator<T>(source));
+        return new Enumerable<T>(() => new ArrayIterator<T>(source));
     }
 
-    protected static makeIterator<T, TReturnIteratorType>(sourceIterator: Iterator<T>, next: ((sourceIterator: Iterator<T>) => IteratorResult<TReturnIteratorType>)) {
-        const iterator: Iterator<TReturnIteratorType> = {
-            next: function () {
-                return next(sourceIterator);
+    protected static makeIteratorGetter<T, TReturnIteratorType>(sourceIterator: Iterator<T>, next: ((sourceIterator: Iterator<T>) => IteratorResult<TReturnIteratorType>)) {
+        const getter = () => {
+            const iterator: Iterator<TReturnIteratorType> = {
+                next: function () {
+                    return next(sourceIterator);
+                }
             }
-        }
-        if (sourceIterator.return) {
-            iterator.return = <any>(sourceIterator.return);
-        }
-        return iterator;
+            if (sourceIterator.return) {
+                iterator.return = <any>(sourceIterator.return);
+            }
+            return iterator;
+        };
+        return getter;
     }
 
     protected constructor(iteratorGetter: () => Iterator<T>) {
@@ -506,14 +508,14 @@ export class Enumerable<T> implements Iterable<T> {
     public Reverse(): Enumerable<T> {
         const src = this.ToArray();
         let pointer = src.length - 1;
-        return Enumerable.Of({
+        return Enumerable.Of(() => ({
             next: function () {
                 if (pointer < 0) {
                     return { done: true, value: <any>null }
                 }
                 return { done: false, value: <T>src[pointer--] }
             }
-        });
+        }));
     }
 
     /**
@@ -521,7 +523,7 @@ export class Enumerable<T> implements Iterable<T> {
      * @param selector The selector to be invoked on each element
      */
     public Select<TReturnType>(selector: (item: T) => TReturnType): Enumerable<TReturnType> {
-        const newIterator = Enumerable.makeIterator<T, TReturnType>(this.iteratorGetter(), function (sourceIterator) {
+        const newIterator = Enumerable.makeIteratorGetter<T, TReturnType>(this.iteratorGetter(), function (sourceIterator) {
             const nextItem = sourceIterator.next();
             if (nextItem.done) {
                 return {
@@ -545,7 +547,7 @@ export class Enumerable<T> implements Iterable<T> {
         const foreignRows = this.Select(selector);
         const foreignRowIterator = foreignRows.iteratorGetter();
         let currentRowIterator: Iterator<TReturnType> | undefined;
-        const newIterator = Enumerable.makeIterator<T, TReturnType>(this.iteratorGetter(), function (sourceIterator) {
+        const newIterator = Enumerable.makeIteratorGetter<T, TReturnType>(this.iteratorGetter(), function (sourceIterator) {
             while (true) {
                 if (currentRowIterator) {
                     const nextRow = currentRowIterator.next();
@@ -697,7 +699,7 @@ export class Enumerable<T> implements Iterable<T> {
         }
         let numTaken = 0;
         // We use makeIterator here instead of SelectMany, as we don't want to iterate past the number we're supposed to take.
-        const newIterator = Enumerable.makeIterator<T, T>(this.iteratorGetter(), function (sourceIterator) {
+        const newIterator = Enumerable.makeIteratorGetter<T, T>(this.iteratorGetter(), function (sourceIterator) {
             if (numTaken >= num) {
                 return { done: true, value: <any>null };
             } else {
@@ -714,7 +716,7 @@ export class Enumerable<T> implements Iterable<T> {
      * @param predicate The predicate to be invoked on each element.
      */
     public TakeWhile(predicate: (item: T) => boolean): Enumerable<T> {
-        const newIterator = Enumerable.makeIterator<T, T>(this.iteratorGetter(), function (sourceIterator) {
+        const newIterator = Enumerable.makeIteratorGetter<T, T>(this.iteratorGetter(), function (sourceIterator) {
             const currentItem = sourceIterator.next();
             if (currentItem.done || predicate(currentItem.value)) {
                 return currentItem;
@@ -1013,7 +1015,7 @@ export class Dictionary<TKey, TValue> extends Lookup<TKey, TValue> {
     }
 }
 
-class EmptyIterator<T> implements Iterator<T> {
+class ArrayIterator<T> implements Iterator<T> {
     private source: T[];
     private pointer = 0;
     public constructor(source: T[]) {
@@ -1037,7 +1039,7 @@ class EmptyIterator<T> implements Iterator<T> {
         this.pointer = 0;
     }
 
-    clone(): EmptyIterator<T> {
-        return new EmptyIterator<T>(this.source);
+    clone(): ArrayIterator<T> {
+        return new ArrayIterator<T>(this.source);
     }
 }

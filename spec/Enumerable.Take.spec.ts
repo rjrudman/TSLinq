@@ -43,13 +43,15 @@ describe('Enumerable', () => {
 
         it('Should be lazily executed', () => {
             let i = 0;
-            const generator: Iterator<number> = {
-                next: function () {
-                    if (i >= 3) {
-                        throw new Error('Generator should not be invoked when the enumerable hasn\'t been materialized');
+            const generator = () => {
+                return {
+                    next: function () {
+                        if (i >= 3) {
+                            throw new Error('Generator should not be invoked when the enumerable hasn\'t been materialized');
+                        }
+                        return { done: false, value: i++ };
                     }
-                    return { done: false, value: i++ };
-                }
+                };
             };
 
             const expected: number[] = [0, 1, 2];
