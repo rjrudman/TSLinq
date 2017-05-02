@@ -14,8 +14,13 @@ const getObjectId: ((obj: any) => number) = function () {
     };
 }();
 
-function isIterator<T>(obj: any): obj is (() => Iterator<T>) {
-    return obj && {}.toString.call(obj) === '[object Function]';
+function isGeneratorFunction<T>(obj: any): obj is (() => Iterator<T>) {
+    if (!obj) {
+        return false;
+    }
+    const objDefinition = {}.toString.call(obj);
+    return objDefinition === '[object Function]'
+        || objDefinition === '[object GeneratorFunction]';
 }
 
 export interface Grouping<T, TValue> {
@@ -31,7 +36,7 @@ export class Enumerable<T> implements Iterable<T> {
      * @param source Either an array of T, or an Iterator<T>. An Iterator<T> can be manually created, or using function generators.
      */
     public static Of<T>(source: T[] | (() => Iterator<T>)): Enumerable<T> {
-        if (isIterator(source)) {
+        if (isGeneratorFunction(source)) {
             return new Enumerable<T>(source);
         }
         return new Enumerable<T>(() => new ArrayIterator<T>(source));
