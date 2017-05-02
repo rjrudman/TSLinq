@@ -43,7 +43,7 @@ function* GetNumbers() {
     }
 }
 
-let FirstTenNumbers = Enumerable.Of(GetNumbers())
+let FirstTenNumbers = Enumerable.Of(GetNumbers)
     .Take(10)
     .ToArray();
     
