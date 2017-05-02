@@ -14,13 +14,6 @@ const getObjectId: ((obj: any) => number) = function () {
     };
 }();
 
-function getKey(key: any) {
-    if (typeof (key) === 'object') {
-        return getObjectId(key);
-    }
-    return JSON.stringify(key);
-}
-
 function isIterator<T>(obj: any): obj is (() => Iterator<T>) {
     return obj && {}.toString.call(obj) === '[object Function]';
 }
@@ -173,10 +166,11 @@ export class Enumerable<T> implements Iterable<T> {
     /**
      * Returns whether or not the sequence contains the specified element
      * @param item The element to search for
+     * @param hashFunction An optional parameter which provides a custom hash method
      */
-    public Contains(element: T): boolean {
-        const elementKey = getKey(element);
-        return this.Any(a => getKey(a) === elementKey);
+    public Contains(element: T, hashFunction: HashFunction = DefaultHash): boolean {
+        const elementKey = hashFunction(element);
+        return this.Any(a => hashFunction(a) === elementKey);
     };
 
     /**
@@ -899,14 +893,24 @@ export interface KeyValuePair<TKey, TValue> {
     Value: TValue
 }
 
+type HashFunction = (item: any) => string | number;
+export function DefaultHash(item: any): string | number {
+    if (typeof (item) === 'object') {
+        return getObjectId(item);
+    }
+    return JSON.stringify(item);
+}
+
 export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>> implements Iterator<KeyValuePair<TKey, TValue>> {
     private pointer = 0;
+    protected hashFunction: HashFunction;
     protected holder: any = {};
     protected keys: TKey[] = []
     protected values: TValue[] = [];
 
-    protected constructor() {
+    protected constructor(hashFunction: HashFunction = DefaultHash) {
         super(() => this);
+        this.hashFunction = hashFunction;
     }
 
     /**
@@ -914,7 +918,7 @@ export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>>
      * @param key The key to search for.
      */
     public Get(key: TKey): TValue {
-        const id = getKey(key);
+        const id = this.hashFunction(key);
         const result = this.holder[id];
         if (result === undefined) {
             throw new Error('The given key was not present in the dictionary.')
@@ -927,7 +931,7 @@ export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>>
      * @param key The key to search for.
      */
     public TryGetValue(key: TKey): TValue | undefined {
-        const id = getKey(key);
+        const id = this.hashFunction(key);
         const result = this.holder[id];
         return result;
     }
@@ -937,7 +941,7 @@ export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>>
      * @param key The key to search for.
      */
     public ContainsKey(key: TKey): boolean {
-        const id = getKey(key);
+        const id = this.hashFunction(key);
         const result = this.holder[id];
         return result !== undefined;
     }
@@ -979,8 +983,8 @@ export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>>
 }
 
 export class Dictionary<TKey, TValue> extends Lookup<TKey, TValue> {
-    constructor() {
-        super();
+    constructor(hashFunction: HashFunction = DefaultHash) {
+        super(hashFunction);
     }
 
     /**
@@ -992,7 +996,7 @@ export class Dictionary<TKey, TValue> extends Lookup<TKey, TValue> {
         if (this.TryGetValue(key)) {
             throw new Error('An item with the same key has already been added.');
         }
-        const id = getKey(key);
+        const id = this.hashFunction(key);
         this.holder[id] = value;
         this.keys.push(key);
         this.values.push(value);
@@ -1004,7 +1008,7 @@ export class Dictionary<TKey, TValue> extends Lookup<TKey, TValue> {
      * @param value The value to add for the supplied key.
      */
     public AddOrReplace(key: TKey, value: TValue): void {
-        const id = getKey(key);
+        const id = this.hashFunction(key);
         const didExist = this.TryGetValue(key);
 
         if (!didExist) {

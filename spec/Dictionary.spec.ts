@@ -101,5 +101,15 @@ describe('Dictionary', () => {
             expect(values[0]).toEqual(5);
             expect(values[1]).toEqual(15);
         });
+
+        it('Should distinguish between an object and a number', () => {
+            const dictionary = new Dictionary<any, number>();
+            const someObject = {};
+            dictionary.Add(someObject, 1);
+            dictionary.Add(0, 2);
+
+            expect(dictionary.Get(someObject)).toBe(1);
+            expect(dictionary.Get(0)).toBe(2);
+        })
     });
 });
