@@ -3,7 +3,6 @@
   "compilerOptions": {
     "outDir": "./dist",
     "sourceMap": false,
-    "allowJs": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
     "declaration": false,
