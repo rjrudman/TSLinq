@@ -138,7 +138,7 @@ export class Enumerable<T> implements Iterable<T> {
                 num += i;
                 count++;
             } else {
-                throw new Error('Sum() is only valid on Enumerable<number>');
+                throw new Error('Average() is only valid on Enumerable<number>');
             }
         });
 
