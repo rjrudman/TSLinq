@@ -893,7 +893,7 @@ export interface KeyValuePair<TKey, TValue> {
     Value: TValue
 }
 
-type HashFunction = (item: any) => string | number;
+export type HashFunction = (item: any) => string | number;
 export function DefaultHash(item: any): string | number {
     if (typeof (item) === 'object') {
         return getObjectId(item);
