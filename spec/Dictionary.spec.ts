@@ -1,4 +1,5 @@
 import { Dictionary } from '../src/TSLinq';
+import { DefaultEqualityComparer } from '../src/TSLinqEqualityComparisons';
 
 describe('Dictionary', () => {
     describe('Add', () => {
@@ -130,8 +131,8 @@ describe('Dictionary', () => {
             }).toThrow(new Error('An item with the same key has already been added.'))
         });
 
-        it ('Should handle collisions properly', () => {
-             const equalityComparer = {
+        it('Should handle collisions properly', () => {
+            const equalityComparer = {
                 Equals: (left: number, right: number) => left === right,
                 GetHashCode: (item: number) => 1
             };
@@ -142,6 +143,16 @@ describe('Dictionary', () => {
 
             expect(dictionary.Get(1)).toBe(5);
             expect(dictionary.Get(2)).toBe(10);
-        })
+        });
+
+        it('Should be able to be passed an enumerable-like seed', () => {
+            const dictionary = new Dictionary<number, number>([{ Key: 1, Value: 5 }]);
+            expect(dictionary.Get(1)).toBe(5);
+        });
+
+        it('Should be able to be passed an enumerable-like seed and comparer', () => {
+            const dictionary = new Dictionary<number, number>([{ Key: 1, Value: 5 }], new DefaultEqualityComparer<number>());
+            expect(dictionary.Get(1)).toBe(5);
+        });
     });
 });

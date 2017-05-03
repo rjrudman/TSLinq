@@ -27,6 +27,10 @@ function isGeneratorFunction<T>(obj: any): obj is (() => Iterator<T>) {
         || objDefinition === '[object GeneratorFunction]';
 }
 
+function isConvertableToEnumerable<T>(obj: any): obj is ConvertableToEnumerable<T> {
+    return isEnumerable(obj) || isArray(obj) || isGeneratorFunction<T>(obj);
+}
+
 export interface Grouping<T, TValue> {
     Key: T,
     Values: Enumerable<TValue>
@@ -38,6 +42,14 @@ export class Enumerable<T> implements Iterable<T> {
     public ____Kind: TSLinqEnumerableKind = Enumerable.Kind;
 
     protected iteratorGetter: () => Iterator<T>;
+
+    public static Empty<T>(): Enumerable<T> {
+        return Enumerable.Of(() => {
+            return {
+                next: () => { return { done: true, value: <any>null } }
+            };
+        });
+    }
     /**
      * Creates an Enumerable which encapsulates the provided source
      * @param source Either an Enumerable<T>, an array of T, or an Iterator<T>. An Iterator<T> can be manually created, or using function generators.
@@ -941,12 +953,44 @@ export interface KeyValuePair<TKey, TValue> {
 export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>> implements Iterator<KeyValuePair<TKey, TValue>> {
     private pointer = 0;
     protected equalityComparer: EqualityComparer<TKey>;
-    protected holder: { [index: string]: { Key: TKey, Value: TValue} } = {};
+    protected holder: { [index: string]: { Key: TKey, Value: TValue } } = {};
     protected keys: TKey[] = []
 
-    protected constructor(equalityComparer: EqualityComparer<TKey> = new DefaultEqualityComparer<TKey>()) {
+    protected constructor(equalityComparer?: EqualityComparer<TKey>);
+    protected constructor(source: ConvertableToEnumerable<KeyValuePair<TKey, TValue>>, equalityComparer?: EqualityComparer<TKey>);
+    protected constructor(sourceOrEqualityComparer?: ConvertableToEnumerable<KeyValuePair<TKey, TValue>> | EqualityComparer<TKey>, equalityComparer?: EqualityComparer<TKey>) {
         super(() => this);
-        this.equalityComparer = equalityComparer;
+        let src: ConvertableToEnumerable<KeyValuePair<TKey, TValue>>;
+        if (!sourceOrEqualityComparer && !equalityComparer) {
+            // Empty constructor
+            this.equalityComparer = new DefaultEqualityComparer<TKey>();
+            src = Enumerable.Empty<KeyValuePair<TKey, TValue>>();
+        } else if (sourceOrEqualityComparer && equalityComparer) {
+            // We were passed both
+            this.equalityComparer = equalityComparer;
+            if (isConvertableToEnumerable(sourceOrEqualityComparer)) {
+                src = sourceOrEqualityComparer;
+            } else {
+                // Won't happen with typescript usage due to our overload definitions
+                throw new Error('Invalid constructor arguments');
+            }
+        } else if (sourceOrEqualityComparer && !equalityComparer) {
+            if (isConvertableToEnumerable(sourceOrEqualityComparer)) {
+                // We were only passed the source
+                src = sourceOrEqualityComparer;
+                this.equalityComparer = new DefaultEqualityComparer<TKey>();
+            } else {
+                // We were only passed the comparer
+                this.equalityComparer = sourceOrEqualityComparer;
+                src = Enumerable.Empty<KeyValuePair<TKey, TValue>>();
+            }
+        } else {
+            // Won't happen with typescript usage due to our overload definitions
+            throw new Error('Invalid constructor arguments');
+        }
+        Enumerable.Of(src).ForEach(kvp => {
+            this.Add(kvp.Key, kvp.Value);
+        })
     }
 
     protected GetHashAndValue(key: TKey): { Hash: number | string, Value?: TValue } {
@@ -967,6 +1011,20 @@ export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>>
             }
             currentHash += '__KeyOffset';
         }
+    }
+
+    /**
+     * Adds a key and value. If they key already exists, an error is thrown.
+     * @param key The key to add.
+     * @param value The value to add for the supplied key.
+     */
+    protected Add(key: TKey, value: TValue): void {
+        const hashAndValue = this.GetHashAndValue(key);
+        if (hashAndValue.Value !== undefined) {
+            throw new Error('An item with the same key has already been added.');
+        }
+        this.holder[hashAndValue.Hash] = { Key: key, Value: value };
+        this.keys.push(key);
     }
 
     /**
@@ -1035,8 +1093,11 @@ export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>>
 }
 
 export class Dictionary<TKey, TValue> extends Lookup<TKey, TValue> {
-    constructor(equalityComparer: EqualityComparer<TKey> = new DefaultEqualityComparer<TKey>()) {
-        super(equalityComparer);
+
+    constructor(equalityComparer?: EqualityComparer<TKey>);
+    constructor(source: ConvertableToEnumerable<KeyValuePair<TKey, TValue>>, equalityComparer?: EqualityComparer<TKey>);
+    constructor(sourceOrEqualityComparer?: ConvertableToEnumerable<KeyValuePair<TKey, TValue>> | EqualityComparer<TKey>, equalityComparer?: EqualityComparer<TKey>) {
+        super(<any>sourceOrEqualityComparer, equalityComparer);
     }
 
     /**
