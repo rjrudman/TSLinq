@@ -13,4 +13,5 @@ before_script:
   - npm install jasmine --global
 script:
   - npm run build
+  - npm run buildprod
   - npm run test
