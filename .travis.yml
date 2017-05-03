@@ -1,7 +1,4 @@
 language: node_js
-branches:
-  only:
-    - master
 cache:
   diretories:
     - node_modules
@@ -16,4 +13,5 @@ before_script:
   - npm install jasmine --global
 script:
   - npm run build
+  - npm run buildprod
   - npm run test
