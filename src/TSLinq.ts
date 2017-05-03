@@ -1,4 +1,4 @@
-import { DefaultEqual, DefaultCompare, EqualityEqualsMethod, EqualityGetHashCodeMethod, DefaultHash, EqualityComparer, DefaultEqualityComparer } from './TSLinqEqualityComparisons';
+import { DefaultEqual, DefaultCompare, EqualityEqualsMethod, EqualityGetHashCodeMethod, DefaultHash, EqualityComparer, DefaultEqualityComparer, EqualityCompareMethod } from './TSLinqEqualityComparisons';
 import { ArrayIterator } from './TSLinqIterators';
 
 export type TSLinqEnumerableKind = 'TSLinqEnumerable';
@@ -237,8 +237,10 @@ export class Enumerable<T> implements Iterable<T> {
 
     /**
      * Returns the distinct items in the sequence
+     * @param A custom comparerer to be used to judge distinctness
+     * @param equalityComparer A custom comparer to be used to judge distinctness
      */
-    public Distinct(hashCodeMethod: EqualityGetHashCodeMethod<T> = DefaultHash): Enumerable<T> {
+    public Distinct(equalityComparer: EqualityComparer<T> = new DefaultEqualityComparer<T>()): Enumerable<T> {
         return this.GroupBy(a => a).Select(g => g.Key);
     }
 
@@ -279,10 +281,11 @@ export class Enumerable<T> implements Iterable<T> {
     /**
      * Returns the distinct elements in the sequence which are not found in the provided sequence
      * @param other The sequence containing elements to be excluded
+     * @param equalityComparer A custom comparer to be used to judge distinctness
      */
-    public Except(other: ConvertableToEnumerable<T>): Enumerable<T> {
+    public Except(other: ConvertableToEnumerable<T>, equalityComparer: EqualityComparer<T> = new DefaultEqualityComparer<T>()): Enumerable<T> {
         const otherArray = Enumerable.Of(other).ToArray();
-        return this.Distinct().Where(a => otherArray.indexOf(a) === -1);
+        return this.Distinct(equalityComparer).Where(a => otherArray.indexOf(a) === -1);
     }
 
     /**
@@ -343,9 +346,10 @@ export class Enumerable<T> implements Iterable<T> {
     /**
      * Groups elements in the sequence by the supplied key selector. This method is not lazily executed.
      * @param selector A selector which returns the key for the sequence to be grouped by
+     * @param equalityComparer A custom comparer to be used to judge distinctness
      */
-    public GroupBy<TValue>(selector: (item: T) => TValue): Enumerable<Grouping<TValue, T>> {
-        const dictionary = new Dictionary<TValue, T[]>();
+    public GroupBy<TValue>(selector: (item: T) => TValue, equalityComparer: EqualityComparer<TValue> = new DefaultEqualityComparer<TValue>()): Enumerable<Grouping<TValue, T>> {
+        const dictionary = new Dictionary<TValue, T[]>(equalityComparer);
         this.ForEach(i => {
             const key = selector(i);
             if (!dictionary.ContainsKey(key)) {
@@ -368,16 +372,22 @@ export class Enumerable<T> implements Iterable<T> {
      * @param outerKeySelector Key selector for the outer sequence
      * @param innerKeySelector Key selector for the inner sequence
      * @param resultSelector Selector to transform the result
+     * @param equalityComparer A custom comparer to be used to judge distinctness
      */
     public GroupJoin<TInner, TKey, TResult>(inner: ConvertableToEnumerable<TInner>,
         outerKeySelector: ((item: T) => TKey),
         innerKeySelector: ((item: TInner) => TKey),
-        resultSelector: ((originalRow: T, innerRows: Enumerable<TInner>) => TResult)): Enumerable<TResult> {
+        resultSelector: ((originalRow: T, innerRows: Enumerable<TInner>) => TResult),
+        equalityComparer: EqualityComparer<TKey> = new DefaultEqualityComparer<TKey>()): Enumerable<TResult> {
 
         const innerEnumerable = Enumerable.Of(inner);
+        const innerSet = innerEnumerable.GroupBy(i => innerKeySelector(i)).ToDictionary(a => a.Key, a => a.Values, equalityComparer);
         return this.Select(a => {
             const outerKey = outerKeySelector(a);
-            const innerRows = innerEnumerable.Where(i => innerKeySelector(i) === outerKey);
+            let innerRows = innerSet.TryGetValue(outerKey);
+            if (!innerRows) {
+                innerRows = Enumerable.Empty<TInner>();
+            }
             const result = resultSelector(a, innerRows);
             return result;
         });
@@ -386,10 +396,11 @@ export class Enumerable<T> implements Iterable<T> {
     /**
      * Returns distinct elements which are present in both sequences
      * @param inner The second sequence
+     * @param equalityComparer A custom comparer to be used to judge distinctness
      */
-    public Intersect(inner: ConvertableToEnumerable<T>): Enumerable<T> {
+    public Intersect(inner: ConvertableToEnumerable<T>, equalityComparer: EqualityComparer<T> = new DefaultEqualityComparer<T>()): Enumerable<T> {
         const innerEnumerable = Enumerable.Of(inner);
-        return this.Where(x => innerEnumerable.Contains(x)).Distinct();
+        return this.Where(x => innerEnumerable.Contains(x, equalityComparer.Equals.bind(equalityComparer))).Distinct(equalityComparer);
     }
 
     /**
@@ -398,16 +409,22 @@ export class Enumerable<T> implements Iterable<T> {
      * @param outerKeySelector Key selector for the outer sequence
      * @param innerKeySelector Key selector for the inner sequence
      * @param resultSelector Selector to transform the result
+     * @param equalityComparer A custom comparer to be used to judge distinctness
      */
     public Join<TInner, TKey, TResult>(inner: ConvertableToEnumerable<TInner>,
         outerKeySelector: ((item: T) => TKey),
         innerKeySelector: ((item: TInner) => TKey),
-        resultSelector: ((originalRow: T, innerRow: TInner) => TResult)): Enumerable<TResult> {
+        resultSelector: ((originalRow: T, innerRow: TInner) => TResult),
+        equalityComparer: EqualityComparer<TKey> = new DefaultEqualityComparer<TKey>()): Enumerable<TResult> {
 
         const innerEnumerable = Enumerable.Of(inner);
+        const innerSet = innerEnumerable.GroupBy(i => innerKeySelector(i)).ToDictionary(a => a.Key, a => a.Values, equalityComparer);
         return this.SelectMany(a => {
             const outerKey = outerKeySelector(a);
-            const innerRows = innerEnumerable.Where(i => innerKeySelector(i) === outerKey);
+            let innerRows = innerSet.TryGetValue(outerKey);
+            if (!innerRows) {
+                innerRows = Enumerable.Empty<TInner>();
+            }
             return innerRows.Select(innerRow => {
                 return resultSelector(a, innerRow);
             })
@@ -522,17 +539,19 @@ export class Enumerable<T> implements Iterable<T> {
     /**
      * Orders the sequence by the result of the selector in ascending order
      * @param selector The selector to be invoked on each element
+     * @param compareMethod A custom comparison method
      */
-    public OrderBy(selector: (item: T) => any): OrderedEnumerable<T> {
-        return new OrderedEnumerable<T>(this.iteratorGetter, [{ Selector: selector, Direction: 'ASC' }]);
+    public OrderBy<TReturnType>(selector: (item: T) => TReturnType, compareMethod?: EqualityCompareMethod<T>): OrderedEnumerable<T> {
+        return new OrderedEnumerable<T>(this.iteratorGetter, [{ Selector: selector, Direction: 'ASC', CompareMethod: compareMethod }]);
     }
 
     /**
      * Orders the sequence by the result of the selector in descending order
      * @param selector The selector to be invoked on each element
+     * @param compareMethod A custom comparison method
      */
-    public OrderByDescending<TReturnType>(selector: (item: T) => TReturnType): OrderedEnumerable<T> {
-        return new OrderedEnumerable<T>(this.iteratorGetter, [{ Selector: selector, Direction: 'DESC' }]);
+    public OrderByDescending<TReturnType>(selector: (item: T) => TReturnType, compareMethod?: EqualityCompareMethod<T>): OrderedEnumerable<T> {
+        return new OrderedEnumerable<T>(this.iteratorGetter, [{ Selector: selector, Direction: 'DESC', CompareMethod: compareMethod }]);
     }
 
     /**
@@ -613,15 +632,16 @@ export class Enumerable<T> implements Iterable<T> {
     /**
      * Returns whether or not two sequences are equal.
      * @param inner The second sequence
+     * @param equalMethod A custom method used to determine equality
      */
-    public SequenceEqual(inner: ConvertableToEnumerable<T>): boolean {
+    public SequenceEqual(inner: ConvertableToEnumerable<T>, equalMethod: EqualityEqualsMethod<T> = DefaultEqual): boolean {
         const innerEnumerable = Enumerable.Of(inner);
         if (this.Count() !== innerEnumerable.Count()) {
             return false;
         }
 
         return this.Zip(innerEnumerable, (left, right) => { return { left, right } })
-            .All(item => DefaultEqual(item.left, item.right));
+            .All(item => equalMethod(item.left, item.right));
     }
 
     /**
@@ -798,11 +818,12 @@ export class Enumerable<T> implements Iterable<T> {
      * Iterates the enumerable and returns a dictionary. This method is not lazily executed.
      * @param keySelector The selector which returns the key for each element.
      * @param valueSelector The selector which returns the value for each element.
+     * @param equalityComparer A custom comparer to be used to judge distinctness
      */
-    public ToDictionary<TKey, TValue>(keySelector: (item: T) => TKey, valueSelector: (item: T) => TValue): Dictionary<TKey, TValue>;
-    public ToDictionary<TKey, TValue>(keySelector: (item: T) => TKey, valueSelector?: (item: T) => TValue): Dictionary<TKey, TValue> | Dictionary<TKey, T> {
+    public ToDictionary<TKey, TValue>(keySelector: (item: T) => TKey, valueSelector: (item: T) => TValue, equalityComparer?: EqualityComparer<TKey>): Dictionary<TKey, TValue>;
+    public ToDictionary<TKey, TValue>(keySelector: (item: T) => TKey, valueSelector?: (item: T) => TValue, equalityComparer: EqualityComparer<TKey> = new DefaultEqualityComparer<TKey>()): Dictionary<TKey, TValue> | Dictionary<TKey, T> {
         if (valueSelector) {
-            const returnDictionary = new Dictionary<TKey, TValue>();
+            const returnDictionary = new Dictionary<TKey, TValue>(equalityComparer);
             this.ForEach(item => {
                 const key = keySelector(item);
                 const value = valueSelector(item);
@@ -810,7 +831,7 @@ export class Enumerable<T> implements Iterable<T> {
             });
             return returnDictionary;
         } else {
-            const returnDictionary = new Dictionary<TKey, T>();
+            const returnDictionary = new Dictionary<TKey, T>(equalityComparer);
             this.ForEach(item => {
                 const key = keySelector(item);
                 const value = item;
@@ -830,21 +851,23 @@ export class Enumerable<T> implements Iterable<T> {
      * Iterates the enumerable and returns an immutable dictionary. This method is not lazily executed.
      * @param keySelector The selector which returns the key for each element.
      * @param valueSelector The selector which returns the value for each element.
+     * @param equalityComparer A custom comparer to be used to judge distinctness
      */
-    public ToLookup<TKey, TValue>(keySelector: (item: T) => TKey, valueSelector: (item: T) => TValue): Lookup<TKey, TValue>;
-    public ToLookup<TKey, TValue>(keySelector: (item: T) => TKey, valueSelector?: (item: T) => TValue): Lookup<TKey, TValue> | Lookup<TKey, T> {
+    public ToLookup<TKey, TValue>(keySelector: (item: T) => TKey, valueSelector: (item: T) => TValue, equalityComparer?: EqualityComparer<TKey>): Lookup<TKey, TValue>;
+    public ToLookup<TKey, TValue>(keySelector: (item: T) => TKey, valueSelector?: (item: T) => TValue, equalityComparer: EqualityComparer<TKey> = new DefaultEqualityComparer<TKey>()): Lookup<TKey, TValue> | Lookup<TKey, T> {
         if (valueSelector) {
-            return <Lookup<TKey, TValue>>this.ToDictionary(keySelector, valueSelector);
+            return <Lookup<TKey, TValue>>this.ToDictionary(keySelector, valueSelector, equalityComparer);
         }
-        return <Lookup<TKey, T>>this.ToDictionary(keySelector);
+        return <Lookup<TKey, T>>this.ToDictionary(keySelector, v => v, equalityComparer);
     }
 
     /**
      * Concatenates this sequence with another, and returns only the distinct elements.
      * @param inner The second sequence
+     * @param equalityComparer A custom comparer to be used to judge distinctness
      */
-    public Union(inner: ConvertableToEnumerable<T>): Enumerable<T> {
-        return this.Concat(inner).Distinct();
+    public Union(inner: ConvertableToEnumerable<T>, equalityComparer: EqualityComparer<T> = new DefaultEqualityComparer<T>()): Enumerable<T> {
+        return this.Concat(inner).Distinct(equalityComparer);
     }
 
     /**
@@ -882,7 +905,8 @@ export class Enumerable<T> implements Iterable<T> {
 
 export interface OrderInformation<T> {
     Selector: (item: T) => any;
-    Direction: 'ASC' | 'DESC'
+    Direction: 'ASC' | 'DESC',
+    CompareMethod?: EqualityCompareMethod<T>
 }
 
 export class OrderedEnumerable<T> extends Enumerable<T> {
@@ -907,10 +931,11 @@ export class OrderedEnumerable<T> extends Enumerable<T> {
                                     const leftSelected = orderSelector(left);
                                     const rightSelected = orderSelector(right);
 
+                                    const compareMethod = order.CompareMethod || DefaultCompare
                                     if (order.Direction === 'ASC') {
-                                        currentResult = DefaultCompare(leftSelected, rightSelected);
+                                        currentResult = compareMethod(leftSelected, rightSelected);
                                     } else {
-                                        currentResult = DefaultCompare(rightSelected, leftSelected);
+                                        currentResult = compareMethod(rightSelected, leftSelected);
                                     }
                                 }
                             }
@@ -930,17 +955,19 @@ export class OrderedEnumerable<T> extends Enumerable<T> {
     /**
      * Provides subsequent ordering of the sequence in ascending order according to the selector
      * @param selector The function to provide the value to sort on
+     * @param compareMethod A custom comparison method
      */
-    public ThenBy<TReturnType>(selector: (item: T) => TReturnType): Enumerable<T> {
-        return new OrderedEnumerable<T>(this.iteratorGetter, [...this.orders, { Selector: selector, Direction: 'ASC' }]);
+    public ThenBy<TReturnType>(selector: (item: T) => TReturnType, compareMethod?: EqualityCompareMethod<T>): OrderedEnumerable<T> {
+        return new OrderedEnumerable<T>(this.iteratorGetter, [...this.orders, { Selector: selector, Direction: 'ASC', CompareMethod: compareMethod }]);
     }
 
     /**
      * Provides subsequent ordering of the sequence in descending order according to the selector
      * @param selector The function to provide the value to sort on
+     * @param compareMethod A custom comparison method
      */
-    public ThenByDescending<TReturnType>(selector: (item: T) => TReturnType): Enumerable<T> {
-        return new OrderedEnumerable<T>(this.iteratorGetter, [...this.orders, { Selector: selector, Direction: 'DESC' }]);
+    public ThenByDescending<TReturnType>(selector: (item: T) => TReturnType, compareMethod?: EqualityCompareMethod<T>): OrderedEnumerable<T> {
+        return new OrderedEnumerable<T>(this.iteratorGetter, [...this.orders, { Selector: selector, Direction: 'DESC', CompareMethod: compareMethod }]);
     }
 }
 
@@ -956,7 +983,8 @@ export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>>
     protected holder: { [index: string]: { Key: TKey, Value: TValue } } = {};
     protected keys: TKey[] = []
 
-    protected constructor(equalityComparer?: EqualityComparer<TKey>);
+    protected constructor();
+    protected constructor(equalityComparer: EqualityComparer<TKey>);
     protected constructor(source: ConvertableToEnumerable<KeyValuePair<TKey, TValue>>, equalityComparer?: EqualityComparer<TKey>);
     protected constructor(sourceOrEqualityComparer?: ConvertableToEnumerable<KeyValuePair<TKey, TValue>> | EqualityComparer<TKey>, equalityComparer?: EqualityComparer<TKey>) {
         super(() => this);
@@ -1094,10 +1122,11 @@ export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>>
 
 export class Dictionary<TKey, TValue> extends Lookup<TKey, TValue> {
 
-    constructor(equalityComparer?: EqualityComparer<TKey>);
+    constructor();
+    constructor(equalityComparer: EqualityComparer<TKey>);
     constructor(source: ConvertableToEnumerable<KeyValuePair<TKey, TValue>>, equalityComparer?: EqualityComparer<TKey>);
     constructor(sourceOrEqualityComparer?: ConvertableToEnumerable<KeyValuePair<TKey, TValue>> | EqualityComparer<TKey>, equalityComparer?: EqualityComparer<TKey>) {
-        super(<any>sourceOrEqualityComparer, equalityComparer);
+        super(<any>sourceOrEqualityComparer, <any>equalityComparer);
     }
 
     /**
