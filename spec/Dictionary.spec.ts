@@ -113,9 +113,12 @@ describe('Dictionary', () => {
         });
 
         it('Should use the provided hash function', () => {
-            const hashFunction = (item: any) => { return 1 };
+            const equalityComparer = {
+                Equals: (left: any, right: any) => true,
+                GetHashCode: (item: any) => 1
+            };
 
-            const dictionary = new Dictionary<any, number>(hashFunction);
+            const dictionary = new Dictionary<any, number>(equalityComparer);
             const someObject = {};
             dictionary.Add(someObject, 1);
             expect(() => {
@@ -125,6 +128,20 @@ describe('Dictionary', () => {
             expect(() => {
                 dictionary.Add('Hello', 3);
             }).toThrow(new Error('An item with the same key has already been added.'))
+        });
+
+        it ('Should handle collisions properly', () => {
+             const equalityComparer = {
+                Equals: (left: number, right: number) => left === right,
+                GetHashCode: (item: number) => 1
+            };
+
+            const dictionary = new Dictionary<number, number>(equalityComparer);
+            dictionary.Add(1, 5);
+            dictionary.Add(2, 10);
+
+            expect(dictionary.Get(1)).toBe(5);
+            expect(dictionary.Get(2)).toBe(10);
         })
     });
 });

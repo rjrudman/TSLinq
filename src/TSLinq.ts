@@ -1,4 +1,4 @@
-import { DefaultEqual, DefaultCompare, EqualityEqualsMethod, EqualityGetHashCodeMethod, DefaultHash } from './TSLinqEqualityComparisons';
+import { DefaultEqual, DefaultCompare, EqualityEqualsMethod, EqualityGetHashCodeMethod, DefaultHash, EqualityComparer, DefaultEqualityComparer } from './TSLinqEqualityComparisons';
 import { ArrayIterator } from './TSLinqIterators';
 
 export type TSLinqEnumerableKind = 'TSLinqEnumerable';
@@ -226,7 +226,7 @@ export class Enumerable<T> implements Iterable<T> {
     /**
      * Returns the distinct items in the sequence
      */
-    public Distinct(): Enumerable<T> {
+    public Distinct(hashCodeMethod: EqualityGetHashCodeMethod<T> = DefaultHash): Enumerable<T> {
         return this.GroupBy(a => a).Select(g => g.Key);
     }
 
@@ -940,14 +940,33 @@ export interface KeyValuePair<TKey, TValue> {
 
 export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>> implements Iterator<KeyValuePair<TKey, TValue>> {
     private pointer = 0;
-    protected hashFunction: EqualityGetHashCodeMethod<TKey>;
-    protected holder: any = {};
+    protected equalityComparer: EqualityComparer<TKey>;
+    protected holder: { [index: string]: { Key: TKey, Value: TValue} } = {};
     protected keys: TKey[] = []
-    protected values: TValue[] = [];
 
-    protected constructor(hashFunction: EqualityGetHashCodeMethod<TKey> = DefaultHash) {
+    protected constructor(equalityComparer: EqualityComparer<TKey> = new DefaultEqualityComparer<TKey>()) {
         super(() => this);
-        this.hashFunction = hashFunction;
+        this.equalityComparer = equalityComparer;
+    }
+
+    protected GetHashAndValue(key: TKey): { Hash: number | string, Value?: TValue } {
+        const originalHash = this.equalityComparer.GetHashCode(key);
+        let currentHash: string;
+        if (typeof originalHash === 'number') {
+            currentHash = originalHash + '';
+        } else {
+            currentHash = originalHash;
+        }
+        while (true) {
+            const result = this.holder[currentHash];
+            if (result === undefined) {
+                return { Hash: currentHash, Value: undefined };
+            }
+            if (this.equalityComparer.Equals(key, result.Key)) {
+                return { Hash: currentHash, Value: result.Value };
+            }
+            currentHash += '__KeyOffset';
+        }
     }
 
     /**
@@ -955,8 +974,7 @@ export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>>
      * @param key The key to search for.
      */
     public Get(key: TKey): TValue {
-        const id = this.hashFunction(key);
-        const result = this.holder[id];
+        const result = this.TryGetValue(key);
         if (result === undefined) {
             throw new Error('The given key was not present in the dictionary.')
         }
@@ -968,9 +986,7 @@ export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>>
      * @param key The key to search for.
      */
     public TryGetValue(key: TKey): TValue | undefined {
-        const id = this.hashFunction(key);
-        const result = this.holder[id];
-        return result;
+        return this.GetHashAndValue(key).Value;
     }
 
     /**
@@ -978,8 +994,7 @@ export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>>
      * @param key The key to search for.
      */
     public ContainsKey(key: TKey): boolean {
-        const id = this.hashFunction(key);
-        const result = this.holder[id];
+        const result = this.TryGetValue(key);
         return result !== undefined;
     }
 
@@ -994,7 +1009,7 @@ export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>>
      * Returns a sequence of the values.
      */
     public get Values(): Enumerable<TValue> {
-        return Enumerable.Of(this.values);
+        return this.Select(s => this.Get(s.Key));
     }
 
     next(value?: any): IteratorResult<KeyValuePair<TKey, TValue>> {
@@ -1020,8 +1035,8 @@ export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>>
 }
 
 export class Dictionary<TKey, TValue> extends Lookup<TKey, TValue> {
-    constructor(hashFunction: EqualityGetHashCodeMethod<TKey> = DefaultHash) {
-        super(hashFunction);
+    constructor(equalityComparer: EqualityComparer<TKey> = new DefaultEqualityComparer<TKey>()) {
+        super(equalityComparer);
     }
 
     /**
@@ -1030,13 +1045,12 @@ export class Dictionary<TKey, TValue> extends Lookup<TKey, TValue> {
      * @param value The value to add for the supplied key.
      */
     public Add(key: TKey, value: TValue): void {
-        if (this.TryGetValue(key)) {
+        const hashAndValue = this.GetHashAndValue(key);
+        if (hashAndValue.Value !== undefined) {
             throw new Error('An item with the same key has already been added.');
         }
-        const id = this.hashFunction(key);
-        this.holder[id] = value;
+        this.holder[hashAndValue.Hash] = { Key: key, Value: value };
         this.keys.push(key);
-        this.values.push(value);
     }
 
     /**
@@ -1045,14 +1059,11 @@ export class Dictionary<TKey, TValue> extends Lookup<TKey, TValue> {
      * @param value The value to add for the supplied key.
      */
     public AddOrReplace(key: TKey, value: TValue): void {
-        const id = this.hashFunction(key);
-        const didExist = this.TryGetValue(key);
-
-        if (!didExist) {
+        const hashAndValue = this.GetHashAndValue(key);
+        if (hashAndValue.Value === undefined) {
             this.keys.push(key);
         }
-        this.holder[id] = value;
-        this.values.push(value);
+        this.holder[hashAndValue.Hash] = { Key: key, Value: value };
     }
 }
 
