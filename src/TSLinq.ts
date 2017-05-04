@@ -33,7 +33,7 @@ export interface Grouping<T, TValue> {
 
 export type ConvertableToEnumerable<T> = T[] | Enumerable<T> | (() => Iterator<T>);
 export class Enumerable<T> implements Iterable<T> {
-    protected iteratorGetter: () => Iterator<T>;
+    protected iteratorGenerator: () => Iterator<T>;
 
     public static Empty<T>(): Enumerable<T> {
         return Enumerable.Of(() => {
@@ -75,11 +75,11 @@ export class Enumerable<T> implements Iterable<T> {
     }
 
     protected constructor(iteratorGetter: () => Iterator<T>) {
-        this.iteratorGetter = iteratorGetter;
+        this.iteratorGenerator = iteratorGetter;
     }
 
     [Symbol.iterator]() {
-        return this.iteratorGetter();
+        return this.iteratorGenerator();
     }
 
     /**
@@ -134,7 +134,7 @@ export class Enumerable<T> implements Iterable<T> {
         if (predicate) {
             enumerable = enumerable.Where(predicate);
         }
-        return !enumerable.iteratorGetter().next().done;
+        return !enumerable.iteratorGenerator().next().done;
     }
 
     /**
@@ -209,7 +209,7 @@ export class Enumerable<T> implements Iterable<T> {
             enumerable = enumerable.Where(predicate);
         }
         let i = 0;
-        const iterator = enumerable.iteratorGetter();
+        const iterator = enumerable.iteratorGenerator();
         while (!iterator.next().done) {
             i++;
         }
@@ -245,7 +245,7 @@ export class Enumerable<T> implements Iterable<T> {
             throw new Error('Index was out of range. Must be non-negative and less than the size of the collection');
         }
         const skippedItems = this.Skip(index);
-        const nextItem = skippedItems.iteratorGetter().next();
+        const nextItem = skippedItems.iteratorGenerator().next();
         if (nextItem.done) {
             throw new Error('Index was out of range. Must be non-negative and less than the size of the collection');
         } else {
@@ -262,7 +262,7 @@ export class Enumerable<T> implements Iterable<T> {
             return null;
         }
         const skippedItems = this.Skip(index);
-        const nextItem = skippedItems.iteratorGetter().next();
+        const nextItem = skippedItems.iteratorGenerator().next();
         if (nextItem.done) {
             return null;
         } else {
@@ -293,7 +293,7 @@ export class Enumerable<T> implements Iterable<T> {
         if (predicate !== undefined) {
             return this.Where(predicate).First();
         }
-        const nextItem = this.iteratorGetter().next();
+        const nextItem = this.iteratorGenerator().next();
         if (nextItem.done) {
             throw new Error('Sequence contains no elements');
         } else {
@@ -314,7 +314,7 @@ export class Enumerable<T> implements Iterable<T> {
         if (predicate !== undefined) {
             return this.Where(predicate).FirstOrDefault();
         }
-        const nextItem = this.iteratorGetter().next();
+        const nextItem = this.iteratorGenerator().next();
         if (nextItem.done) {
             return null;
         } else {
@@ -327,12 +327,19 @@ export class Enumerable<T> implements Iterable<T> {
      * @param func The function to be invoked on each element
      */
     public ForEach(func: ((item: T) => void)): void {
-        const iterator = this.iteratorGetter();
+        const iterator = this.iteratorGenerator();
         let item = iterator.next();
         while (!item.done) {
             func(item.value);
             item = iterator.next();
         }
+    }
+
+    /**
+     * Returns an Enumerator for the sequence
+     */
+    public GetEnumerator(): Enumerator<T> {
+        return new Enumerator<T>(this.iteratorGenerator);
     }
 
     /**
@@ -534,7 +541,7 @@ export class Enumerable<T> implements Iterable<T> {
      * @param compareMethod A custom comparison method
      */
     public OrderBy<TReturnType>(selector: (item: T) => TReturnType, compareMethod?: EqualityCompareMethod<T>): OrderedEnumerable<T> {
-        return new OrderedEnumerable<T>(this.iteratorGetter, [{ Selector: selector, Direction: 'ASC', CompareMethod: compareMethod }]);
+        return new OrderedEnumerable<T>(this.iteratorGenerator, [{ Selector: selector, Direction: 'ASC', CompareMethod: compareMethod }]);
     }
 
     /**
@@ -543,7 +550,7 @@ export class Enumerable<T> implements Iterable<T> {
      * @param compareMethod A custom comparison method
      */
     public OrderByDescending<TReturnType>(selector: (item: T) => TReturnType, compareMethod?: EqualityCompareMethod<T>): OrderedEnumerable<T> {
-        return new OrderedEnumerable<T>(this.iteratorGetter, [{ Selector: selector, Direction: 'DESC', CompareMethod: compareMethod }]);
+        return new OrderedEnumerable<T>(this.iteratorGenerator, [{ Selector: selector, Direction: 'DESC', CompareMethod: compareMethod }]);
     }
 
     /**
@@ -568,7 +575,7 @@ export class Enumerable<T> implements Iterable<T> {
      */
     public Select<TReturnType>(selector: (item: T) => TReturnType): Enumerable<TReturnType> {
         const newIterator = () => {
-            return Enumerable.makeIteratorGetter<T, TReturnType>(this.iteratorGetter, function (sourceIterator) {
+            return Enumerable.makeIteratorGetter<T, TReturnType>(this.iteratorGenerator, function (sourceIterator) {
                 const nextItem = sourceIterator.next();
                 if (nextItem.done) {
                     return {
@@ -592,9 +599,9 @@ export class Enumerable<T> implements Iterable<T> {
     public SelectMany<TReturnType>(selector: (item: T) => ConvertableToEnumerable<TReturnType>): Enumerable<TReturnType> {
         const generator = () => {
             const foreignRows = this.Select(selector);
-            const foreignRowIterator = foreignRows.iteratorGetter();
+            const foreignRowIterator = foreignRows.iteratorGenerator();
             let currentRowIterator: Iterator<TReturnType> | undefined;
-            const newIterator = Enumerable.makeIteratorGetter<T, TReturnType>(this.iteratorGetter, function (sourceIterator) {
+            const newIterator = Enumerable.makeIteratorGetter<T, TReturnType>(this.iteratorGenerator, function (sourceIterator) {
                 while (true) {
                     if (currentRowIterator) {
                         const nextRow = currentRowIterator.next();
@@ -613,7 +620,7 @@ export class Enumerable<T> implements Iterable<T> {
                             value: <any>null
                         }
                     }
-                    currentRowIterator = Enumerable.Of(nextSet.value).iteratorGetter();
+                    currentRowIterator = Enumerable.Of(nextSet.value).iteratorGenerator();
                 }
             });
             return newIterator;
@@ -650,7 +657,7 @@ export class Enumerable<T> implements Iterable<T> {
             return this.Where(predicate).First();
         }
 
-        const iterator = this.iteratorGetter();
+        const iterator = this.iteratorGenerator();
         const nextItem = iterator.next();
         if (nextItem.done) {
             throw new Error('Sequence contains no elements');
@@ -675,7 +682,7 @@ export class Enumerable<T> implements Iterable<T> {
             return this.Where(predicate).First();
         }
 
-        const iterator = this.iteratorGetter();
+        const iterator = this.iteratorGenerator();
         const nextItem = iterator.next();
         if (nextItem.done) {
             return null;
@@ -751,7 +758,7 @@ export class Enumerable<T> implements Iterable<T> {
                 num = 0;
             }
             let numTaken = 0;
-            const newIterator = Enumerable.makeIteratorGetter<T, T>(this.iteratorGetter, function (sourceIterator) {
+            const newIterator = Enumerable.makeIteratorGetter<T, T>(this.iteratorGenerator, function (sourceIterator) {
                 if (numTaken >= num) {
                     return { done: true, value: <any>null };
                 } else {
@@ -772,7 +779,7 @@ export class Enumerable<T> implements Iterable<T> {
     public TakeWhile(predicate: (item: T) => boolean): Enumerable<T> {
         const generator = () => {
             // We can't use SelectMany() here, because doing so would iterate the entire collection
-            const newIterator = Enumerable.makeIteratorGetter<T, T>(this.iteratorGetter, function (sourceIterator) {
+            const newIterator = Enumerable.makeIteratorGetter<T, T>(this.iteratorGenerator, function (sourceIterator) {
                 const currentItem = sourceIterator.next();
                 if (currentItem.done || predicate(currentItem.value)) {
                     return currentItem;
@@ -791,7 +798,7 @@ export class Enumerable<T> implements Iterable<T> {
      */
     public ToArray(): T[] {
         const items: T[] = [];
-        const iterator = this.iteratorGetter();
+        const iterator = this.iteratorGenerator();
         let currentItem = iterator.next();
         while (!currentItem.done) {
             items.push(currentItem.value)
@@ -883,7 +890,7 @@ export class Enumerable<T> implements Iterable<T> {
      */
     public Zip<TInner, TResult>(inner: ConvertableToEnumerable<TInner>, selector: (left: T, right: TInner) => TResult): Enumerable<TResult> {
         const innerEnumerable = Enumerable.Of(inner);
-        const innerIterator = innerEnumerable.iteratorGetter();
+        const innerIterator = innerEnumerable.iteratorGenerator();
         return this.SelectMany(a => {
             const nextInner = innerIterator.next();
             if (nextInner.done) {
@@ -910,7 +917,7 @@ export class OrderedEnumerable<T> extends Enumerable<T> {
         const currentSrc = new Enumerable<T>(iteratorGetter);
         let pointer = 0;
         let srcArray: T[] | undefined;
-        this.iteratorGetter = () => {
+        this.iteratorGenerator = () => {
             return {
                 next: function () {
                     if (!srcArray) {
@@ -950,7 +957,7 @@ export class OrderedEnumerable<T> extends Enumerable<T> {
      * @param compareMethod A custom comparison method
      */
     public ThenBy<TReturnType>(selector: (item: T) => TReturnType, compareMethod?: EqualityCompareMethod<T>): OrderedEnumerable<T> {
-        return new OrderedEnumerable<T>(this.iteratorGetter, [...this.orders, { Selector: selector, Direction: 'ASC', CompareMethod: compareMethod }]);
+        return new OrderedEnumerable<T>(this.iteratorGenerator, [...this.orders, { Selector: selector, Direction: 'ASC', CompareMethod: compareMethod }]);
     }
 
     /**
@@ -959,7 +966,7 @@ export class OrderedEnumerable<T> extends Enumerable<T> {
      * @param compareMethod A custom comparison method
      */
     public ThenByDescending<TReturnType>(selector: (item: T) => TReturnType, compareMethod?: EqualityCompareMethod<T>): OrderedEnumerable<T> {
-        return new OrderedEnumerable<T>(this.iteratorGetter, [...this.orders, { Selector: selector, Direction: 'DESC', CompareMethod: compareMethod }]);
+        return new OrderedEnumerable<T>(this.iteratorGenerator, [...this.orders, { Selector: selector, Direction: 'DESC', CompareMethod: compareMethod }]);
     }
 }
 
@@ -1144,3 +1151,52 @@ export class Dictionary<TKey, TValue> extends Lookup<TKey, TValue> {
     }
 }
 
+export class Enumerator<T> {
+    private iteratorGenerator: () => Iterator<T>;
+    private src: Iterator<T>;
+    private current?: T;
+    private started: boolean;
+
+    constructor(iteratorGenerator: (() => Iterator<T>)) {
+        this.iteratorGenerator = iteratorGenerator;
+        this.Reset();
+    }
+
+    /**
+     * Advances the enumerator to the next element of the sequence. Returns false if the sequence has finished, otherwise true.
+     */
+    public MoveNext(): boolean {
+        this.started = true;
+        const next = this.src.next();
+        if (next.done) {
+            this.current = undefined;
+            return false;
+        } else {
+            this.current = next.value;
+            return true;
+        }
+    }
+
+    /**
+     * Gets the current element in the sequence
+     */
+    public get Current(): T {
+        if (this.current) {
+            return this.current;
+        } else {
+            if (this.started) {
+                throw new Error('Enumeration already finished.');
+            } else {
+                throw new Error('Enumeration has not started. Call MoveNext.');
+            }
+        }
+    }
+
+    /**
+     * Sets the enumerator to its initial position, which is before the first element in the sequence. MoveNext() must be called again before accessing Current.
+     */
+    public Reset(): void {
+        this.src = this.iteratorGenerator();
+        this.started = false;
+    }
+}
