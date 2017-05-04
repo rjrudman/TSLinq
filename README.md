@@ -11,6 +11,8 @@ TSLinq is an ES5 compatible port of [.NET's LINQ library](https://msdn.microsoft
 
 TSLinq utilises lazily evaluated `Enumerable<T>`'s, rather than eager evaluation found in other libraries. In addition, it supports [ES6 generators](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/function*) allowing for powerful data manipulation.
 
+Ships with a fully functional implementation of `Dictionary<TKey, TValue>()` which supports collision handling, proper identity hashing by default, custom equality comparers.
+
 ## Install
 
 ```
@@ -75,4 +77,51 @@ const result =
 console.log(result);
 
 // Outputs [ 0, 1, 2 ]
+```
+
+### Using Dictionary<TKey, TValue>
+
+#### Basic implementation
+
+```
+const objectA: any = {};
+const objectB: any = {};
+
+const dictionary = new Dictionary<any, number>();
+dictionary.Add(objectA, 5);
+dictionary.Add(objectB, 10);
+
+dictionary.Get(objectA); // Returns 5
+dictionary.Get(objectB); // Returns 10
+```
+
+#### Using a custom equality comparer
+```
+const objectA: any = {};
+const objectB: any = {};
+
+const equalityComparer = {
+    Equals: (left: any, right: any) => true,
+    GetHashCode: (item: any) => JSON.stringify(item)
+};
+
+const dictionary = new Dictionary<any, number>(equalityComparer);
+dictionary.Add(objectA, 5);
+dictionary.Add(objectB, 10); // Throws an exception, key already exists, as the JSON strings match, 
+                             // and we always return true when comparing
+```
+
+```
+const objectA: any = {};
+const objectB: any = {};
+
+const equalityComparer = {
+    Equals: (left: any, right: any) => left === right,
+    GetHashCode: (item: any) => JSON.stringify(item)
+};
+
+const dictionary = new Dictionary<any, number>(equalityComparer);
+dictionary.Add(objectA, 5);
+dictionary.Add(objectB, 10); // Does not throw - collisions are properly handled,
+                             // And we then check for identity equality
 ```
