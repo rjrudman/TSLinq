@@ -1,13 +1,8 @@
 import { DefaultEqual, DefaultCompare, EqualityEqualsMethod, EqualityGetHashCodeMethod, DefaultHash, EqualityComparer, DefaultEqualityComparer, EqualityCompareMethod } from './TSLinqEqualityComparisons';
 import { ArrayIterator } from './TSLinqIterators';
 
-export type TSLinqEnumerableKind = 'TSLinqEnumerable';
 function isEnumerable<T>(obj: any): obj is Enumerable<T> {
-    if (!obj) {
-        return false;
-    }
-
-    return (<Enumerable<T>>obj).____Kind === Enumerable.Kind;
+    return obj instanceof Enumerable;
 }
 
 function isArray<T>(obj: any): obj is T[] {
@@ -38,9 +33,6 @@ export interface Grouping<T, TValue> {
 
 export type ConvertableToEnumerable<T> = T[] | Enumerable<T> | (() => Iterator<T>);
 export class Enumerable<T> implements Iterable<T> {
-    public static Kind: TSLinqEnumerableKind = 'TSLinqEnumerable';
-    public ____Kind: TSLinqEnumerableKind = Enumerable.Kind;
-
     protected iteratorGetter: () => Iterator<T>;
 
     public static Empty<T>(): Enumerable<T> {
