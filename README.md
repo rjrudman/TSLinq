@@ -11,7 +11,7 @@ TSLinq is an ES5 compatible port of [.NET's LINQ library](https://msdn.microsoft
 
 TSLinq utilises lazily evaluated `Enumerable<T>`'s, rather than eager evaluation found in other libraries. In addition, it supports [ES6 generators](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/function*) allowing for powerful data manipulation.
 
-Ships with a fully functional implementation of `Dictionary<TKey, TValue>()` which supports collision handling, proper identity hashing by default, custom equality comparers.
+Ships with a fully functional implementation of `Dictionary<TKey, TValue>()` which supports collision handling, proper identity hashing by default and custom equality comparers.
 
 ## Install
 
@@ -21,7 +21,7 @@ npm install tslinq
 
 ## Usage
 
-```
+```typescript
 import { Enumerable } from 'tslinq'
 
 let things = Enumerable.Of([1, 2, 3])
@@ -37,7 +37,7 @@ console.log(things);
 
 ## Using ES6 generator functions
 
-```
+```typescript
 function* GetNumbers() {
     let i = 0;
     while(true) {
@@ -56,7 +56,7 @@ console.log(FirstTenNumbers);
 
 ## Using manually created generator functions
 
-```
+```typescript
 let i = 0;
 const generator = () => {
     return {
@@ -83,7 +83,7 @@ console.log(result);
 
 #### Basic implementation
 
-```
+```typescript
 const objectA: any = {};
 const objectB: any = {};
 
@@ -96,7 +96,7 @@ dictionary.Get(objectB); // Returns 10
 ```
 
 #### Using a custom equality comparer
-```
+```typescript
 const objectA: any = {};
 const objectB: any = {};
 
@@ -111,7 +111,7 @@ dictionary.Add(objectB, 10); // Throws an exception, key already exists, as the 
                              // and we always return true when comparing
 ```
 
-```
+```typescript
 const objectA: any = {};
 const objectB: any = {};
 
