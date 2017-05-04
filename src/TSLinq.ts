@@ -1017,7 +1017,7 @@ export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>>
             throw new Error('Invalid constructor arguments');
         }
         Enumerable.Of(src).ForEach(kvp => {
-            this.Add(kvp.Key, kvp.Value);
+            this.add(kvp.Key, kvp.Value);
         })
     }
 
@@ -1046,7 +1046,7 @@ export class Lookup<TKey, TValue> extends Enumerable<KeyValuePair<TKey, TValue>>
      * @param key The key to add.
      * @param value The value to add for the supplied key.
      */
-    protected Add(key: TKey, value: TValue): void {
+    protected add(key: TKey, value: TValue): void {
         const hashAndValue = this.GetHashAndValue(key);
         if (hashAndValue.Value !== undefined) {
             throw new Error('An item with the same key has already been added.');
@@ -1135,12 +1135,7 @@ export class Dictionary<TKey, TValue> extends Lookup<TKey, TValue> {
      * @param value The value to add for the supplied key.
      */
     public Add(key: TKey, value: TValue): void {
-        const hashAndValue = this.GetHashAndValue(key);
-        if (hashAndValue.Value !== undefined) {
-            throw new Error('An item with the same key has already been added.');
-        }
-        this.holder[hashAndValue.Hash] = { Key: key, Value: value };
-        this.keys.push(key);
+        this.add(key, value);
     }
 
     /**
