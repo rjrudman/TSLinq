@@ -1,6 +1,6 @@
 {
   "name": "tslinq",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "description": "ES5 compatable implementation of LINQ and lazily executed enumerables for typescript.",
   "typescript": {
     "definition": "dist/TSLinqEntry.d.ts"
