@@ -194,6 +194,9 @@ export class Enumerable<T> implements Iterable<T> {
         }
         let i = 0;
         const iterator = enumerable.iteratorGenerator();
+        if (iterator instanceof ArrayIterator) {
+            return iterator.Count();
+        }
         while (!iterator.next().done) {
             i++;
         }
@@ -228,6 +231,14 @@ export class Enumerable<T> implements Iterable<T> {
         if (index < 0) {
             throw new Error('Index was out of range. Must be non-negative and less than the size of the collection');
         }
+        const currentGenerator = this.iteratorGenerator();
+        if (currentGenerator instanceof ArrayIterator) {
+            const result = currentGenerator.ElementAt(index);
+            if (result === undefined) {
+                throw new Error('Index was out of range. Must be non-negative and less than the size of the collection');
+            }
+            return result;
+        }
         const skippedItems = this.Skip(index);
         const nextItem = skippedItems.iteratorGenerator().next();
         if (nextItem.done) {
@@ -245,6 +256,15 @@ export class Enumerable<T> implements Iterable<T> {
         if (index < 0) {
             return null;
         }
+        const currentGenerator = this.iteratorGenerator();
+        if (currentGenerator instanceof ArrayIterator) {
+            const result = currentGenerator.ElementAt(index);
+            if (result === undefined) {
+                return null;
+            }
+            return result;
+        }
+
         const skippedItems = this.Skip(index);
         const nextItem = skippedItems.iteratorGenerator().next();
         if (nextItem.done) {
@@ -277,6 +297,15 @@ export class Enumerable<T> implements Iterable<T> {
         if (predicate !== undefined) {
             return this.Where(predicate).First();
         }
+
+        const currentGenerator = this.iteratorGenerator();
+        if (currentGenerator instanceof ArrayIterator) {
+            const result = currentGenerator.ElementAt(0);
+            if (result === undefined) {
+                throw new Error('Sequence contains no elements');
+            }
+        }
+
         const nextItem = this.iteratorGenerator().next();
         if (nextItem.done) {
             throw new Error('Sequence contains no elements');
@@ -298,6 +327,15 @@ export class Enumerable<T> implements Iterable<T> {
         if (predicate !== undefined) {
             return this.Where(predicate).FirstOrDefault();
         }
+
+        const currentGenerator = this.iteratorGenerator();
+        if (currentGenerator instanceof ArrayIterator) {
+            const result = currentGenerator.ElementAt(0);
+            if (result === undefined) {
+                return null;
+            }
+        }
+
         const nextItem = this.iteratorGenerator().next();
         if (nextItem.done) {
             return null;
@@ -424,6 +462,14 @@ export class Enumerable<T> implements Iterable<T> {
      */
     public Last(predicate: ((item: T) => boolean)): T;
     public Last(predicate?: ((item: T) => boolean)): T {
+        const currentGenerator = this.iteratorGenerator();
+        if (!predicate && currentGenerator instanceof ArrayIterator) {
+            const result = currentGenerator.ElementAt(currentGenerator.Count() - 1);
+            if (result === undefined) {
+                throw new Error('Sequence contains no elements');
+            }
+        }
+
         if (predicate) {
             return this.Reverse().First(predicate);
         } else {
@@ -441,6 +487,14 @@ export class Enumerable<T> implements Iterable<T> {
      */
     public LastOrDefault(predicate: ((item: T) => boolean)): T | null;
     public LastOrDefault(predicate?: ((item: T) => boolean)): T | null {
+        const currentGenerator = this.iteratorGenerator();
+        if (!predicate && currentGenerator instanceof ArrayIterator) {
+            const result = currentGenerator.ElementAt(currentGenerator.Count() - 1);
+            if (result === undefined) {
+                return null;
+            }
+        }
+
         if (predicate) {
             return this.Reverse().FirstOrDefault(predicate);
         } else {

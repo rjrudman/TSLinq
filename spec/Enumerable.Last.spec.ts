@@ -15,7 +15,7 @@ describe('Enumerable', () => {
             }).toThrow(new Error('Sequence contains no elements'));
         });
 
-        it('Should return the first item if there\'s no predicate', () => {
+        it('Should return the last item if there\'s no predicate', () => {
             const source = [1, 3];
 
             const expected = 3;
@@ -27,9 +27,9 @@ describe('Enumerable', () => {
             expect(result).toEqual(expected);
         });
 
-        it('Should return the first item which matches the predicate predicate', () => {
+        it('Should return the last item which matches the predicate predicate', () => {
             const source = [1, 3, 4];
-            
+
             const expected = 3;
 
             const result =

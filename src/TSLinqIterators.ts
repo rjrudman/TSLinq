@@ -25,4 +25,11 @@ export class ArrayIterator<T> implements Iterator<T> {
     clone(): ArrayIterator<T> {
         return new ArrayIterator<T>(this.source);
     }
+
+    public Count(): number {
+        return this.source.length;
+    }
+    public ElementAt(index: number): T {
+        return this.source[index];
+    }
 }
