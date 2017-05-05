@@ -1,4 +1,6 @@
 language: node_js
+before_install:
+  npm install -g npm@'>=2.13.5'
 cache:
   diretories:
     - node_modules
@@ -13,8 +15,9 @@ before_script:
   - npm install jasmine --global
 script:
   - npm run build
-  - npm run buildprod
   - npm run test
+  - git clean -fdx
+  - npm run buildprod
 deploy:
   provider: npm
   email: $NPM_API_KEY
