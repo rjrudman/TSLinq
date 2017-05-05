@@ -15,3 +15,9 @@ script:
   - npm run build
   - npm run buildprod
   - npm run test
+deploy:
+  provider: npm
+  email: $NPM_API_KEY
+  api_key: $NPM_EMAIL
+  on:
+    branch: master
