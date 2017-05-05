@@ -574,13 +574,18 @@ export class Enumerable<T> implements Iterable<T> {
      * @param equalMethod A custom method used to determine equality
      */
     public SequenceEqual(inner: ConvertableToEnumerable<T>, equalMethod: EqualityEqualsMethod<T> = DefaultEqual): boolean {
-        const innerEnumerable = Enumerable.Of(inner);
-        if (this.Count() !== innerEnumerable.Count()) {
-            return false;
+        const currentEnumerator = this.GetEnumerator();
+        const otherEnumerator = Enumerable.Of(inner).GetEnumerator();
+        while (currentEnumerator.MoveNext()) {
+            if (otherEnumerator.MoveNext()) {
+                if (!(equalMethod(currentEnumerator.Current, otherEnumerator.Current))) {
+                    return false;
+                }
+            } else {
+                return false;
+            }
         }
-
-        return this.Zip(innerEnumerable, (left, right) => { return { left, right } })
-            .All(item => equalMethod(item.left, item.right));
+        return !otherEnumerator.MoveNext();
     }
 
     /**
