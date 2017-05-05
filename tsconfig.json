@@ -9,6 +9,8 @@
     "moduleResolution": "node",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
+    "downlevelIteration": true,
+    "strict": true,
     "target": "es5",
     "lib": [
       "es2015",

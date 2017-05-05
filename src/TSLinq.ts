@@ -1,6 +1,37 @@
 import { DefaultEqual, DefaultCompare, EqualityEqualsMethod, EqualityGetHashCodeMethod, DefaultHash, EqualityComparer, DefaultEqualityComparer, EqualityCompareMethod } from './TSLinqEqualityComparisons';
 import { ArrayIterator } from './TSLinqIterators';
 
+function* selectManyIterator<T, TResult>(src: Enumerable<T>, selector: (item: T) => ConvertableToEnumerable<TResult>) {
+    for (const item of src) {
+        for (const innerItem of Enumerable.Of(selector(item))) {
+            yield innerItem;
+        }
+    }
+}
+
+function* takeIterator<T>(src: Enumerable<T>, num: number) {
+    let i = 1;
+    for (const item of src) {
+        if (i <= num) {
+            yield item;
+        }
+        if (i === num) {
+            return;
+        }
+        i++;
+    }
+}
+
+function* takeWhileIterator<T>(src: Enumerable<T>, predicate: (item: T) => boolean) {
+    for (const item of src) {
+        if (predicate(item)) {
+            yield item;
+        } else {
+            return;
+        }
+    }
+}
+
 function isEnumerable<T>(obj: any): obj is Enumerable<T> {
     return obj instanceof Enumerable;
 }
@@ -56,22 +87,6 @@ export class Enumerable<T> implements Iterable<T> {
         }
 
         throw new Error('Invalid type supplied. Only supports arrays, generator functions and enumerables.');
-    }
-
-    protected static makeIteratorGetter<T, TReturnIteratorType>(
-        sourceIteratorGetter: () => Iterator<T>,
-        next: ((sourceIterator: Iterator<T>) => IteratorResult<TReturnIteratorType>)
-    ): Iterator<TReturnIteratorType> {
-        const sourceIterator = sourceIteratorGetter();
-        const iterator: Iterator<TReturnIteratorType> = {
-            next: function () {
-                return next(sourceIterator);
-            }
-        }
-        if (sourceIterator.return) {
-            iterator.return = <any>(sourceIterator.return);
-        }
-        return iterator;
     }
 
     protected constructor(iteratorGetter: () => Iterator<T>) {
@@ -574,22 +589,7 @@ export class Enumerable<T> implements Iterable<T> {
      * @param selector The selector to be invoked on each element
      */
     public Select<TReturnType>(selector: (item: T) => TReturnType): Enumerable<TReturnType> {
-        const newIterator = () => {
-            return Enumerable.makeIteratorGetter<T, TReturnType>(this.iteratorGenerator, function (sourceIterator) {
-                const nextItem = sourceIterator.next();
-                if (nextItem.done) {
-                    return {
-                        done: true,
-                        value: <any>null
-                    }
-                }
-                return {
-                    done: false,
-                    value: selector(nextItem.value)
-                };
-            });
-        };
-        return Enumerable.Of<TReturnType>(newIterator);
+        return this.SelectMany(a => [selector(a)]);
     }
 
     /**
@@ -597,35 +597,7 @@ export class Enumerable<T> implements Iterable<T> {
      * @param selector The selector to be invoked on each element
      */
     public SelectMany<TReturnType>(selector: (item: T) => ConvertableToEnumerable<TReturnType>): Enumerable<TReturnType> {
-        const generator = () => {
-            const foreignRows = this.Select(selector);
-            const foreignRowIterator = foreignRows.iteratorGenerator();
-            let currentRowIterator: Iterator<TReturnType> | undefined;
-            const newIterator = Enumerable.makeIteratorGetter<T, TReturnType>(this.iteratorGenerator, function (sourceIterator) {
-                while (true) {
-                    if (currentRowIterator) {
-                        const nextRow = currentRowIterator.next();
-                        if (!nextRow.done) {
-                            return {
-                                done: false,
-                                value: nextRow.value
-                            }
-                        }
-                    }
-
-                    const nextSet = foreignRowIterator.next();
-                    if (nextSet.done) {
-                        return {
-                            done: true,
-                            value: <any>null
-                        }
-                    }
-                    currentRowIterator = Enumerable.Of(nextSet.value).iteratorGenerator();
-                }
-            });
-            return newIterator;
-        };
-        return Enumerable.Of<TReturnType>(generator);
+        return Enumerable.Of(() => selectManyIterator(this, selector));
     }
 
     /**
@@ -714,9 +686,9 @@ export class Enumerable<T> implements Iterable<T> {
         return this.SelectMany(a => {
             skipping = skipping && predicate(a);
             if (!skipping) {
-                return Enumerable.Of([a]);
+                return [a];
             }
-            return Enumerable.Of([]);
+            return [];
         });
     }
 
@@ -752,24 +724,7 @@ export class Enumerable<T> implements Iterable<T> {
      * @param num The number of elements to take
      */
     public Take(num: number): Enumerable<T> {
-        const generator = () => {
-            // We don't make use of TakeWhile() here because that would mean we'd inspect one more item than we need to.
-            if (num < 0) {
-                num = 0;
-            }
-            let numTaken = 0;
-            const newIterator = Enumerable.makeIteratorGetter<T, T>(this.iteratorGenerator, function (sourceIterator) {
-                if (numTaken >= num) {
-                    return { done: true, value: <any>null };
-                } else {
-                    numTaken++;
-                    return sourceIterator.next();
-                }
-            });
-            return newIterator;
-        }
-
-        return Enumerable.Of(generator);
+        return Enumerable.Of(() => takeIterator(this, num));
     }
 
     /**
@@ -777,20 +732,7 @@ export class Enumerable<T> implements Iterable<T> {
      * @param predicate The predicate to be invoked on each element.
      */
     public TakeWhile(predicate: (item: T) => boolean): Enumerable<T> {
-        const generator = () => {
-            // We can't use SelectMany() here, because doing so would iterate the entire collection
-            const newIterator = Enumerable.makeIteratorGetter<T, T>(this.iteratorGenerator, function (sourceIterator) {
-                const currentItem = sourceIterator.next();
-                if (currentItem.done || predicate(currentItem.value)) {
-                    return currentItem;
-                } else {
-                    return { done: true, value: <any>null };
-                }
-            });
-            return newIterator;
-        }
-
-        return Enumerable.Of(generator);
+        return Enumerable.Of(() => takeWhileIterator(this, predicate));
     }
 
     /**
@@ -908,47 +850,39 @@ export interface OrderInformation<T> {
     CompareMethod?: EqualityCompareMethod<T>
 }
 
+function* orderingIterator<T>(src: Enumerable<T>, orders: OrderInformation<T>[]) {
+    const srcArray = src.ToArray().sort((left: T, right: T) => {
+        let currentResult = 0;
+        for (let i = 0; i < orders.length; i++) {
+            const order = orders[i];
+            const orderSelector = order.Selector;
+            if (currentResult === 0) {
+                const leftSelected = orderSelector(left);
+                const rightSelected = orderSelector(right);
+
+                const compareMethod = order.CompareMethod || DefaultCompare
+                if (order.Direction === 'ASC') {
+                    currentResult = compareMethod(leftSelected, rightSelected);
+                } else {
+                    currentResult = compareMethod(rightSelected, leftSelected);
+                }
+            }
+        }
+        return currentResult;
+    });
+    for (const item of srcArray) {
+        yield item;
+    }
+}
+
 export class OrderedEnumerable<T> extends Enumerable<T> {
     private orders: OrderInformation<T>[]
     public constructor(iteratorGetter: () => Iterator<T>, orders: OrderInformation<T>[]) {
         super(iteratorGetter);
         this.orders = orders;
 
-        const currentSrc = new Enumerable<T>(iteratorGetter);
-        let pointer = 0;
-        let srcArray: T[] | undefined;
-        this.iteratorGenerator = () => {
-            return {
-                next: function () {
-                    if (!srcArray) {
-                        srcArray = currentSrc.ToArray().sort((left: T, right: T) => {
-                            let currentResult = 0;
-                            for (let i = 0; i < orders.length; i++) {
-                                const order = orders[i];
-                                const orderSelector = order.Selector;
-                                if (currentResult === 0) {
-                                    const leftSelected = orderSelector(left);
-                                    const rightSelected = orderSelector(right);
-
-                                    const compareMethod = order.CompareMethod || DefaultCompare
-                                    if (order.Direction === 'ASC') {
-                                        currentResult = compareMethod(leftSelected, rightSelected);
-                                    } else {
-                                        currentResult = compareMethod(rightSelected, leftSelected);
-                                    }
-                                }
-                            }
-                            return currentResult;
-                        });
-                    }
-
-                    if (pointer >= srcArray.length) {
-                        return { done: true, value: <T><any>null };
-                    }
-                    return { done: false, value: <T>srcArray[pointer++] };
-                }
-            }
-        };
+        const initialIteratorGenerator = Enumerable.Of(this.iteratorGenerator);
+        this.iteratorGenerator = () => orderingIterator(initialIteratorGenerator, orders);
     }
 
     /**
