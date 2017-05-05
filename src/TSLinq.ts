@@ -42,6 +42,24 @@ export class Enumerable<T> implements Iterable<T> {
             };
         });
     }
+
+    public static Range(start: number, count: number) {
+        if (count < 0) {
+            throw new Error('Specified argument was out of the range of valid values. Parameter name: count');
+        }
+        return Enumerable.Of(() => {
+            const end = start + count;
+            let current = start;
+            return {
+                next: () => {
+                    if (current < end) {
+                        return { done: false, value: current++ };
+                    }
+                    return { done: true, value: <any>null }
+                }
+            }
+        });
+    }
     /**
      * Creates an Enumerable which encapsulates the provided source
      * @param source Either an Enumerable<T>, an array of T, or an Iterator<T>. An Iterator<T> can be manually created, or using function generators.
