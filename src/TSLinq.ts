@@ -1,37 +1,6 @@
 import { DefaultEqual, DefaultCompare, EqualityEqualsMethod, EqualityGetHashCodeMethod, DefaultHash, EqualityComparer, DefaultEqualityComparer, EqualityCompareMethod } from './TSLinqEqualityComparisons';
 import { ArrayIterator } from './TSLinqIterators';
 
-function* selectManyIterator<T, TResult>(src: Enumerable<T>, selector: (item: T) => ConvertableToEnumerable<TResult>) {
-    for (const item of src) {
-        for (const innerItem of Enumerable.Of(selector(item))) {
-            yield innerItem;
-        }
-    }
-}
-
-function* takeIterator<T>(src: Enumerable<T>, num: number) {
-    let i = 1;
-    for (const item of src) {
-        if (i <= num) {
-            yield item;
-        }
-        if (i === num) {
-            return;
-        }
-        i++;
-    }
-}
-
-function* takeWhileIterator<T>(src: Enumerable<T>, predicate: (item: T) => boolean) {
-    for (const item of src) {
-        if (predicate(item)) {
-            yield item;
-        } else {
-            return;
-        }
-    }
-}
-
 function isEnumerable<T>(obj: any): obj is Enumerable<T> {
     return obj instanceof Enumerable;
 }
@@ -589,6 +558,9 @@ export class Enumerable<T> implements Iterable<T> {
      * @param selector The selector to be invoked on each element
      */
     public Select<TReturnType>(selector: (item: T) => TReturnType): Enumerable<TReturnType> {
+        function* myThing() {
+            yield 1;
+        }
         return this.SelectMany(a => [selector(a)]);
     }
 
@@ -597,7 +569,15 @@ export class Enumerable<T> implements Iterable<T> {
      * @param selector The selector to be invoked on each element
      */
     public SelectMany<TReturnType>(selector: (item: T) => ConvertableToEnumerable<TReturnType>): Enumerable<TReturnType> {
-        return Enumerable.Of(() => selectManyIterator(this, selector));
+        function* selectManyIterator(src: Enumerable<T>) {
+            for (const item of src) {
+                for (const innerItem of Enumerable.Of(selector(item))) {
+                    yield innerItem;
+                }
+            }
+        }
+
+        return Enumerable.Of(() => selectManyIterator(this));
     }
 
     /**
@@ -724,7 +704,20 @@ export class Enumerable<T> implements Iterable<T> {
      * @param num The number of elements to take
      */
     public Take(num: number): Enumerable<T> {
-        return Enumerable.Of(() => takeIterator(this, num));
+        function* takeIterator<T>(src: Enumerable<T>) {
+            let i = 1;
+            for (const item of src) {
+                if (i <= num) {
+                    yield item;
+                }
+                if (i === num) {
+                    return;
+                }
+                i++;
+            }
+        }
+
+        return Enumerable.Of(() => takeIterator(this));
     }
 
     /**
@@ -732,7 +725,17 @@ export class Enumerable<T> implements Iterable<T> {
      * @param predicate The predicate to be invoked on each element.
      */
     public TakeWhile(predicate: (item: T) => boolean): Enumerable<T> {
-        return Enumerable.Of(() => takeWhileIterator(this, predicate));
+        function* takeWhileIterator(src: Enumerable<T>, ) {
+            for (const item of src) {
+                if (predicate(item)) {
+                    yield item;
+                } else {
+                    return;
+                }
+            }
+        }
+
+        return Enumerable.Of(() => takeWhileIterator(this));
     }
 
     /**
