@@ -188,15 +188,15 @@ export class Enumerable<T> implements Iterable<T> {
      */
     public Count(predicate: ((item: T) => boolean)): number;
     public Count(predicate?: (item: T) => boolean) {
-        let enumerable = <Enumerable<T>>this;
         if (predicate) {
-            enumerable = enumerable.Where(predicate);
+            return this.Where(predicate).Count();
         }
-        let i = 0;
-        const iterator = enumerable.iteratorGenerator();
+
+        const iterator = this.iteratorGenerator();
         if (iterator instanceof ArrayIterator) {
             return iterator.Count();
         }
+        let i = 0;
         while (!iterator.next().done) {
             i++;
         }
