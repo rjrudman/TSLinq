@@ -14,6 +14,18 @@ describe('Enumerable', () => {
             expect(result).toEqual(expected);
         });
 
+        it('Should return me the first item which matches the predicate', () => {
+            const source = [1, 2];
+
+            const expected = 2;
+
+            const result =
+                Enumerable.Of(source)
+                    .Single(a => a > 1);
+
+            expect(result).toEqual(expected);
+        });
+
         it('Should fail if the sequence contains no items', () => {
             const source: number[] = [];
 
