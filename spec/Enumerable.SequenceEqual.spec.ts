@@ -14,6 +14,18 @@ describe('Enumerable', () => {
             expect(result).toEqual(expected);
         });
 
+        it('Should return false if the sequences are not equal', () => {
+            const source = [1, 2, 3, 4, 5];
+            const source2 = [1, 2, 4, 4, 5];
+            const expected = false;
+
+            const result =
+                Enumerable.Of(source)
+                    .SequenceEqual(source2);
+
+            expect(result).toEqual(expected);
+        });
+
         it('Should return false if the first sequence is shorter', () => {
             const source = [1, 2, 3, 4];
             const source2 = [1, 2, 3, 4, 5];
