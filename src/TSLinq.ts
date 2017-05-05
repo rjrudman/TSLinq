@@ -541,16 +541,7 @@ export class Enumerable<T> implements Iterable<T> {
      * Reverses the sequence
      */
     public Reverse(): Enumerable<T> {
-        const src = this.ToArray();
-        let pointer = src.length - 1;
-        return Enumerable.Of(() => ({
-            next: function () {
-                if (pointer < 0) {
-                    return { done: true, value: <any>null }
-                }
-                return { done: false, value: <T>src[pointer--] }
-            }
-        }));
+        return Enumerable.Of(this.ToArray().reverse());
     }
 
     /**
@@ -740,12 +731,7 @@ export class Enumerable<T> implements Iterable<T> {
      */
     public ToArray(): T[] {
         const items: T[] = [];
-        const iterator = this.iteratorGenerator();
-        let currentItem = iterator.next();
-        while (!currentItem.done) {
-            items.push(currentItem.value)
-            currentItem = iterator.next();
-        }
+        this.ForEach(a => items.push(a));
         return items;
     }
 
@@ -818,9 +804,9 @@ export class Enumerable<T> implements Iterable<T> {
     public Where(predicate: (item: T) => boolean) {
         return this.SelectMany(a => {
             if (predicate(a)) {
-                return Enumerable.Of([a]);
+                return [a];
             } else {
-                return Enumerable.Of([]);
+                return [];
             }
         });
     }
@@ -836,9 +822,9 @@ export class Enumerable<T> implements Iterable<T> {
         return this.SelectMany(a => {
             const nextInner = innerIterator.next();
             if (nextInner.done) {
-                return Enumerable.Of([]);
+                return [];
             } else {
-                return Enumerable.Of([selector(a, nextInner.value)]);
+                return [selector(a, nextInner.value)];
             }
         })
     }
