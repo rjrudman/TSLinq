@@ -558,9 +558,6 @@ export class Enumerable<T> implements Iterable<T> {
      * @param selector The selector to be invoked on each element
      */
     public Select<TReturnType>(selector: (item: T) => TReturnType): Enumerable<TReturnType> {
-        function* myThing() {
-            yield 1;
-        }
         return this.SelectMany(a => [selector(a)]);
     }
 
