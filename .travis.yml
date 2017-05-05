@@ -17,8 +17,8 @@ script:
   - npm run buildprod
 deploy:
   provider: npm
-  email: $NPM_API_KEY
-  api_key: $NPM_EMAIL
+  email: $NPM_EMAIL
+  api_key: $NPM_API_KEY
   skip_cleanup: true
   on:
     branch: master
