@@ -33,5 +33,15 @@ describe('Enumerable', () => {
                         .Single();
             }).toThrow(new Error('Sequence contains more than one element'));
         });
+
+        it('Should fail if the sequence contains more than one which matches the predicate', () => {
+            const source = [1, 2];
+
+            expect(() => {
+                const result =
+                    Enumerable.Of(source)
+                        .Single(s => s < 3);
+            }).toThrow(new Error('Sequence contains more than one element'));
+        });
     });
 });

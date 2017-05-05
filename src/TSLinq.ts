@@ -653,7 +653,7 @@ export class Enumerable<T> implements Iterable<T> {
     public Single(predicate: ((item: T) => boolean)): T;
     public Single(predicate?: ((item: T) => boolean)): T {
         if (predicate !== undefined) {
-            return this.Where(predicate).First();
+            return this.Where(predicate).Single();
         }
 
         const iterator = this.iteratorGenerator();
@@ -678,7 +678,7 @@ export class Enumerable<T> implements Iterable<T> {
     public SingleOrDefault(predicate: ((item: T) => boolean)): T | null;
     public SingleOrDefault(predicate?: ((item: T) => boolean)): T | null {
         if (predicate !== undefined) {
-            return this.Where(predicate).First();
+            return this.Where(predicate).SingleOrDefault();
         }
 
         const iterator = this.iteratorGenerator();
